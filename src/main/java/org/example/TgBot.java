@@ -34,7 +34,6 @@ public class TgBot {
         return UpdatesListener.CONFIRMED_UPDATES_ALL;
     }
 
-    // Формируем ответ
     public SendMessage createResponse(long chatId, String messageText) {
         if (messageText == null) return null;
         String msg = messageText.trim().toLowerCase();
