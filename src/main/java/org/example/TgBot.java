@@ -24,9 +24,6 @@ public class TgBot {
             if (u.message() != null && u.message().text() != null) {
                 long chatId = u.message().chat().id();
                 String messageText = u.message().text();
-
-                System.out.println("Получено сообщение: " + messageText);
-
                 SendMessage response = createResponse(chatId, messageText);
                 bot.execute(response);
             }
