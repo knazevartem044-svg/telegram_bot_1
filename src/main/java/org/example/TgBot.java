@@ -31,21 +31,19 @@ public class TgBot {
         return UpdatesListener.CONFIRMED_UPDATES_ALL;
     }
 
-    // Формируем ответ
     public SendMessage createResponse(long chatId, String messageText) {
         if (messageText == null) return null;
+
         String msg = messageText.trim().toLowerCase();
 
-        switch (msg) {
-            case "/start":
-            case "/help":
-                return new SendMessage(chatId,
-                        "Привет,z повторяю команды. Напиши мне что-нибудь и я это повторю:\n\n" +
-                                "Команды:\n" +
-                                "/start - Запустить бота\n" +
-                                "/help - Показать информацию про бота");
-            default:
-                return new SendMessage(chatId, "Ты написал << " + messageText + " >>");
+        if (msg.equals("/start") || msg.equals("/help")) {
+            String help = "Привет! Вот список доступных команд:\n" +
+                    "/start — приветственное сообщение\n" +
+                    "/help — справка по командам";
+            return new SendMessage(chatId, help);
         }
+
+        return new SendMessage(chatId, "Ты написал << " + messageText + " >>");
     }
+
 }
