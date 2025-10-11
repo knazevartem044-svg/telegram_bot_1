@@ -9,9 +9,15 @@ import java.util.List;
 
 public class TgBot {
     private final TelegramBot bot;
+    private final BotLogic logic;
 
     public TgBot(String token) {
-        bot = new TelegramBot(token);
+        this(token, new BotLogic());
+    }
+
+    public TgBot(String token, BotLogic logic) {
+        this.bot = new TelegramBot(token);
+        this.logic = logic;
     }
 
     public void start() {
@@ -19,12 +25,14 @@ public class TgBot {
         System.out.println("Бот запущен!");
     }
 
-    public int process(List<Update> updates) {
-        for (Update u : updates) {
-            if (u.message() != null && u.message().text() != null) {
-                long chatId = u.message().chat().id();
-                String messageText = u.message().text();
-                SendMessage response = createResponse(chatId, messageText);
+    private int process(List<Update> updates) {
+        for (Update update : updates) {
+            if (update.message() == null || update.message().text() == null) continue;
+
+            long chatId = update.message().chat().id();
+            String text = update.message().text();
+            SendMessage response = createResponse(chatId, text);
+            if (response != null) {
                 bot.execute(response);
             }
         }
@@ -32,18 +40,6 @@ public class TgBot {
     }
 
     public SendMessage createResponse(long chatId, String messageText) {
-        if (messageText == null) return null;
-
-        String msg = messageText.trim().toLowerCase();
-
-        if (msg.equals("/start") || msg.equals("/help")) {
-            String help = "Привет! Вот список доступных команд:\n" +
-                    "/start — приветственное сообщение\n" +
-                    "/help — справка по командам";
-            return new SendMessage(chatId, help);
-        }
-
-        return new SendMessage(chatId, "Ты написал << " + messageText + " >>");
+        return logic.createResponse(chatId, messageText);
     }
-
 }
