@@ -1,6 +1,6 @@
 # Telegram Echo Bot (Java, Maven)
 
-Простой Telegram-бот на Java с использованием библиотеки [pengrad/java-telegram-bot-api](https://github.com/pengrad/java-telegram-bot-api).  
+Простой Telegram-бот на Java с использованием библиотеки [java-telegram-bot-api](https://github.com/pengrad/java-telegram-bot-api).  
 Бот отвечает на команды `/start` и `/help`, а на остальные сообщения возвращает эхо-ответ.
 
 ---
@@ -27,7 +27,6 @@ telegram_bot_1/
 ```env
 TOKEN_BOT=123456789:ABCDEF...
 ```
-
 ---
 
 ## 🧑‍💻 Авторы
