@@ -14,6 +14,7 @@ telegram_bot_1/
 │   │   └── java/org/example/
 │   │       ├── Main.java          # Точка входа: загрузка токена и запуск бота
 │   │       └── TgBot.java         # Класс Telegram-бота, обработка команд и сообщений
+|    |      └── BotLogic.java
 │   └── test/
 │       └── java/com/example/tgbot/
 │           └── TgBotTest.java     # Unit-тесты для метода createResponse
