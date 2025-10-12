@@ -8,28 +8,42 @@ import com.pengrad.telegrambot.request.SendMessage;
 import java.util.List;
 
 /**
- * Класс Telegram-бота.
- * Обрабатывает команды /start и /help,
- * остальные сообщения возвращает как эхо-ответ.
+ * Telegram-бот, который получает и обрабатывает сообщения.
  */
 public class TgBot {
+
+    /** Клиент Telegram Bot API. */
     private final TelegramBot bot;
+
+    /** Логика ответов на сообщения. */
     private final BotLogic logic;
 
+    /**
+     * Создаёт бота с токеном и стандартной логикой.
+     */
     public TgBot(String token) {
         this(token, new BotLogic());
     }
 
+    /**
+     * Создаёт бота с токеном и заданной логикой.
+     */
     public TgBot(String token, BotLogic logic) {
         this.bot = new TelegramBot(token);
         this.logic = logic;
     }
 
+    /**
+     * Запускает бота и начинает обработку сообщений.
+     */
     public void start() {
         bot.setUpdatesListener(this::process);
         System.out.println("Бот запущен!");
     }
 
+    /**
+     * Обрабатывает список обновлений от Telegram.
+     */
     private int process(List<Update> updates) {
         for (Update update : updates) {
             if (update.message() == null || update.message().text() == null) continue;
@@ -44,6 +58,9 @@ public class TgBot {
         return UpdatesListener.CONFIRMED_UPDATES_ALL;
     }
 
+    /**
+     * Создаёт ответ на сообщение пользователя.
+     */
     public SendMessage createResponse(long chatId, String messageText) {
         return logic.createResponse(chatId, messageText);
     }
