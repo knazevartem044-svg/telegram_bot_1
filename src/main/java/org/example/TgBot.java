@@ -7,6 +7,11 @@ import com.pengrad.telegrambot.request.SendMessage;
 
 import java.util.List;
 
+/**
+ * Класс Telegram-бота.
+ * Обрабатывает команды /start и /help,
+ * остальные сообщения возвращает как эхо-ответ.
+ */
 public class TgBot {
     private final TelegramBot bot;
 
@@ -45,5 +50,4 @@ public class TgBot {
 
         return new SendMessage(chatId, "Ты написал << " + messageText + " >>");
     }
-
 }
