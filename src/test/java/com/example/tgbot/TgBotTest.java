@@ -1,5 +1,5 @@
 package com.example.tgbot;
-
+import org.example.BotLogic;
 import org.example.TgBot;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
