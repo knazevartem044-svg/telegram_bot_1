@@ -8,60 +8,60 @@ import com.pengrad.telegrambot.request.SendMessage;
 import java.util.List;
 
 /**
- * Telegram-бот, который получает и обрабатывает сообщения.
+ * Telegram-адаптер: общается с Telegram и маппит Response ↔ Telegram-типы.
+ * Логика вынесена в {@link BotLogic} и возвращает {@link Response}.
  */
 public class TgBot {
 
     /** Клиент Telegram Bot API. */
     private final TelegramBot bot;
 
-    /** Логика ответов на сообщения. */
+    /** Чистая логика без зависимостей от Telegram. */
     private final BotLogic logic;
 
-    /**
-     * Создаёт бота с токеном и стандартной логикой.
-     */
     public TgBot(String token) {
-        this(token, new BotLogic());
+        this.bot = new TelegramBot(token);
+        this.logic = new BotLogic();
     }
 
-    /**
-     * Создаёт бота с токеном и заданной логикой.
-     */
     public TgBot(String token, BotLogic logic) {
         this.bot = new TelegramBot(token);
         this.logic = logic;
     }
 
-    /**
-     * Запускает бота и начинает обработку сообщений.
-     */
+    /** Запуск прослушивания апдейтов. */
     public void start() {
-        bot.setUpdatesListener(this::process);
+        bot.setUpdatesListener(this::onUpdates);
         System.out.println("Бот запущен!");
     }
 
-    /**
-     * Обрабатывает список обновлений от Telegram.
-     */
-    private int process(List<Update> updates) {
-        for (Update update : updates) {
-            if (update.message() == null || update.message().text() == null) continue;
+    /** Обработка входящих апдейтов от Telegram. */
+    private int onUpdates(List<Update> updates) {
+        for (Update u : updates) {
+            if (u.message() == null || u.message().text() == null) continue;
 
-            long chatId = update.message().chat().id();
-            String text = update.message().text();
-            SendMessage response = createResponse(chatId, text);
-            if (response != null) {
-                bot.execute(response);
-            }
+            long chatId = u.message().chat().id();
+            String text = u.message().text();
+
+            // 1) Чистая логика → Response
+            Response resp = logic.createResponse(chatId, text);
+            if (resp == null) continue;
+
+            // 2) Маппинг Response → SendMessage только здесь, в адаптере
+            SendMessage tgMsg = new SendMessage(resp.getChatId(), resp.getText());
+            bot.execute(tgMsg);
         }
         return UpdatesListener.CONFIRMED_UPDATES_ALL;
     }
 
     /**
-     * Создаёт ответ на сообщение пользователя.
+     * Прокси к логике, но тип возвращаем как раньше (SendMessage),
+     * чтобы НЕ ломать твои текущие тесты.
      */
     public SendMessage createResponse(long chatId, String messageText) {
-        return logic.createResponse(chatId, messageText);
+        Response resp = logic.createResponse(chatId, messageText);
+        if (resp == null) return null;
+        return new SendMessage(resp.getChatId(), resp.getText());
     }
 }
+
