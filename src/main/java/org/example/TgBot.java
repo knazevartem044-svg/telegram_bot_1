@@ -63,5 +63,19 @@ public class TgBot {
         if (resp == null) return null;
         return new SendMessage(resp.getChatId(), resp.getText());
     }
-}
+    // Внутри класса TgBot (org.example.TgBot)
+    public String createResponseText(String text) {
+        if (text == null || text.isBlank()) {
+            return "Введите команду /start или /help.";
+        }
 
+        String msg = text.trim().toLowerCase();
+        if (msg.equals("/start") || msg.equals("/help")) {
+            return "Привет! Вот список доступных команд:\n"
+                    + "/start — приветственное сообщение\n"
+                    + "/help — справка по командам";
+        }
+        return text.trim(); // эхо
+    }
+
+}
