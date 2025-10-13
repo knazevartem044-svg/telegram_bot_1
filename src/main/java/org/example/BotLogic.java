@@ -1,24 +1,39 @@
 package org.example;
 
-import com.pengrad.telegrambot.request.SendMessage;
-
 import java.util.Locale;
 
+/**
+ * Чистая логика — не импортирует Telegram SDK и ничего сама не отправляет.
+ * Возвращает транспорт-независимый Response.
+ */
 public class BotLogic {
 
-    /** Обрабатывает входящий текст и возвращает готовый ответ. */
-    public SendMessage createResponse(long chatId, String messageText) {
+    /**
+     * Обрабатывает входящий текст и возвращает готовый ответ (Response).
+     * Допускается возвращать null, если вход пустой/некорректный (под текущие тесты).
+     */
+    public Response createResponse(long chatId, String messageText) {
         if (messageText == null) return null;
 
-        String msg = messageText.trim().toLowerCase(Locale.ROOT);
+        String raw = messageText.trim();
+        String msg = raw.toLowerCase(Locale.ROOT);
 
         if (msg.equals("/start") || msg.equals("/help")) {
             String help = "Привет! Вот список доступных команд:\n" +
                     "/start — приветственное сообщение\n" +
                     "/help — справка по командам";
-            return new SendMessage(chatId, help);
+            return Response.of(chatId, help);
         }
 
-        return new SendMessage(chatId, "Ты написал << " + messageText + " >>");
+        if (msg.startsWith("/echo")) {
+            String payload = raw.replaceFirst("(?i)^/echo\\s*", "").trim();
+            if (payload.isEmpty()) {
+                return Response.of(chatId, "Пример: /echo Привет!");
+            }
+            return Response.of(chatId, payload);
+        }
+
+        // По умолчанию — простое эхо, если это и ожидается твоими тестами/логикой:
+        return Response.of(chatId, "Ты написал << " + messageText + " >>");
     }
 }
