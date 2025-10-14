@@ -1,8 +1,7 @@
 package org.example;
 
 /**
- * Транспорт-независимый ответ логики бота.
- * Логика работает только с этим классом и НЕ знает про Telegram-типы.
+ * Логика работает только с этим классом и не знает про тг типы.
  */
 public final class Response {
     private final long chatId;
