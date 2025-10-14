@@ -1,25 +1,35 @@
 package org.example;
 
 /**
- * Логика работает только с этим классом и не знает про тг типы.
+ * Класс, представляющий ответ бота, независимый от Telegram API.
+ * Хранит идентификатор чата и текст сообщения, которое нужно отправить пользователю.
  */
-public final class Response {
+public class Response {
+
+    /** Уникальный идентификатор чата, для которого предназначен ответ. */
     private final long chatId;
+
+    /** Текст сообщения, который бот должен отправить пользователю. */
     private final String text;
 
-    private Response(long chatId, String text) {
+    /**
+     * Создаёт новый объект ответа с указанным идентификатором чата и текстом сообщения.
+     */
+    public Response(long chatId, String text) {
         this.chatId = chatId;
-        this.text = text == null ? "" : text;
+        this.text = text;
     }
 
-    public static Response of(long chatId, String text) {
-        return new Response(chatId, text);
-    }
-
+    /**
+     * Возвращает идентификатор чата, связанный с данным ответом.
+     */
     public long getChatId() {
         return chatId;
     }
 
+    /**
+     * Возвращает текст сообщения, предназначенного для пользователя.
+     */
     public String getText() {
         return text;
     }
