@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @DisplayName("BotLogic — чистая логика")
 public class TgBotTest {
+<<<<<<< Updated upstream
 
     private static final long CHAT_ID = 123L;
 
@@ -25,6 +26,15 @@ public class TgBotTest {
         return new BotLogic();
     }
 
+=======
+    private TgBot bot;
+    private final long chatId = 111;
+    private String expectedHelpText;
+    /**
+     * Проверка команды /start.
+     * Ожидается приветственное сообщение с перечнем команд.
+     */
+>>>>>>> Stashed changes
     @Test
     @DisplayName("/start -> точная справка")
     void startReturnsHelpExactly() {
