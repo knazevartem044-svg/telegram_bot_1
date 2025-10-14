@@ -1,26 +1,34 @@
 package org.example;
 
 /**
- * Транспорт-независимый ответ логики бота.
- * Логика работает только с этим классом и НЕ знает про Telegram-типы.
+ * Ответ логики бота не зависящий от тг апи
  */
 public final class Response {
+
+    /** Идентификатор чата, куда отправлять сообщение. */
     private final long chatId;
+
+    /** Текст ответа который нужно отправить. */
     private final String text;
 
-    private Response(long chatId, String text) {
+    /**
+     * Создает новый объект ответа
+     */
+    public Response(long chatId, String text) {
         this.chatId = chatId;
-        this.text = text == null ? "" : text;
+        this.text = (text == null ? "" : text);
     }
 
-    public static Response of(long chatId, String text) {
-        return new Response(chatId, text);
-    }
-
+    /**
+     * Возвращает идентификатор чата.
+     */
     public long getChatId() {
         return chatId;
     }
 
+    /**
+     * Возвращает текст сообщения
+     */
     public String getText() {
         return text;
     }
