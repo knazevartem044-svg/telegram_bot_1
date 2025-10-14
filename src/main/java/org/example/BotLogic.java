@@ -1,16 +1,11 @@
 package org.example;
 
 import java.util.Locale;
-
-/**
- * Чистая логика — не импортирует Telegram SDK и ничего сама не отправляет.
- * Возвращает транспорт-независимый Response.
- */
 public class BotLogic {
 
     /**
      * Обрабатывает входящий текст и возвращает готовый ответ (Response).
-     * Допускается возвращать null, если вход пустой/некорректный (под текущие тесты).
+     * Допускается возвращать null если вход пустой/некорректный
      */
     public Response createResponse(long chatId, String messageText) {
         if (messageText == null) return null;
@@ -33,7 +28,6 @@ public class BotLogic {
             return Response.of(chatId, payload);
         }
 
-        // По умолчанию — простое эхо, если это и ожидается твоими тестами/логикой:
         return Response.of(chatId, "Ты написал << " + messageText + " >>");
     }
 }
