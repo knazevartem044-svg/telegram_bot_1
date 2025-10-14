@@ -20,14 +20,6 @@ public class BotLogic {
             return Response.of(chatId, help);
         }
 
-        if (msg.startsWith("/echo")) {
-            String payload = raw.replaceFirst("(?i)^/echo\\s*", "").trim();
-            if (payload.isEmpty()) {
-                return Response.of(chatId, "Пример: /echo Привет!");
-            }
-            return Response.of(chatId, payload);
-        }
-
         return Response.of(chatId, "Ты написал << " + messageText + " >>");
     }
 }

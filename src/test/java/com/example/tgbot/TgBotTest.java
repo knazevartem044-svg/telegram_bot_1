@@ -1,6 +1,5 @@
 package org.example;
 
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -9,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Тесты чистой логики BotLogic без Telegram API.
  * Проверяем только преобразование входной строки в Response.
  */
-@DisplayName("BotLogic — чистая логика")
+
 public class TgBotTest {
 <<<<<<< Updated upstream
 
@@ -36,7 +35,6 @@ public class TgBotTest {
      */
 >>>>>>> Stashed changes
     @Test
-    @DisplayName("/start -> точная справка")
     void startReturnsHelpExactly() {
         Response r = logic().createResponse(CHAT_ID, "/start");
         assertNotNull(r);
@@ -45,7 +43,6 @@ public class TgBotTest {
     }
 
     @Test
-    @DisplayName("/help -> точная справка")
     void helpReturnsHelpExactly() {
         Response r = logic().createResponse(CHAT_ID, "/help");
         assertNotNull(r);
@@ -54,7 +51,6 @@ public class TgBotTest {
     }
 
     @Test
-    @DisplayName("Регистр и пробелы игнорируются для /start и /help")
     void caseAndSpacesIgnoredForCommands() {
         Response r1 = logic().createResponse(CHAT_ID, "   /HeLp   ");
         Response r2 = logic().createResponse(CHAT_ID, "\n/START\t");
@@ -62,26 +58,9 @@ public class TgBotTest {
         assertEquals(HELP_TEXT, r2.getText());
     }
 
-    @Test
-    @DisplayName("/echo c текстом -> возвращает полезную нагрузку без подсказок")
-    void echoWithPayloadReturnsPayload() {
-        Response r = logic().createResponse(CHAT_ID, "/echo   Привет, бот! ");
-        assertNotNull(r);
-        assertEquals(CHAT_ID, r.getChatId());
-        assertEquals("Привет, бот!", r.getText());
-    }
+
 
     @Test
-    @DisplayName("/echo без текста -> подсказка примера")
-    void echoWithoutPayloadReturnsExample() {
-        assertEquals("Пример: /echo Привет!",
-                logic().createResponse(CHAT_ID, "/echo").getText());
-        assertEquals("Пример: /echo Привет!",
-                logic().createResponse(CHAT_ID, "/echo     ").getText());
-    }
-
-    @Test
-    @DisplayName("Произвольный текст -> эхо в формате 'Ты написал << ... >>'")
     void arbitraryTextEcho() {
         String input = "Привет, логика!";
         Response r = logic().createResponse(CHAT_ID, input);
@@ -90,7 +69,6 @@ public class TgBotTest {
     }
 
     @Test
-    @DisplayName("Эхо сохраняет исходные пробелы и символы (не триммится)")
     void echoKeepsOriginalWhitespaces() {
         String input = "  42  :)  ";
         Response r = logic().createResponse(CHAT_ID, input);
@@ -98,7 +76,6 @@ public class TgBotTest {
     }
 
     @Test
-    @DisplayName("null вход -> возвращается null (по контракту BotLogic)")
     void nullInputReturnsNull() {
         assertNull(logic().createResponse(CHAT_ID, null));
     }
