@@ -1,7 +1,5 @@
 package org.example;
-
 import io.github.cdimascio.dotenv.Dotenv;
-
 /**
  * Главный класс приложения.
  * Загружает токен из .env или переменной окружения

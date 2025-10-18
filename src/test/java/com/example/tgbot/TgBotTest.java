@@ -1,39 +1,33 @@
 package org.example;
 
 import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Тесты чистой логики BotLogic без Telegram API.
- * Проверяем только преобразование входной строки в Response.
+ * Тестирует BotLogic без использования Telegram API.
  */
-
 public class TgBotTest {
-<<<<<<< Updated upstream
 
+    /** Идентификатор тестового чата. */
     private static final long CHAT_ID = 123L;
 
-    // Ожидаемый текст справки из BotLogic
+    /** Ожидаемый текст справки из BotLogic. */
     private static final String HELP_TEXT = String.join("\n",
             "Привет! Вот список доступных команд:",
             "/start — приветственное сообщение",
             "/help — справка по командам"
     );
 
+    /**
+     * Создает новый экземпляр логики для тестов.
+     */
     private BotLogic logic() {
         return new BotLogic();
     }
 
-=======
-    private TgBot bot;
-    private final long chatId = 111;
-    private String expectedHelpText;
     /**
-     * Проверка команды /start.
-     * Ожидается приветственное сообщение с перечнем команд.
+     * Проверяет, что /start возвращает точный текст справки.
      */
->>>>>>> Stashed changes
     @Test
     void startReturnsHelpExactly() {
         Response r = logic().createResponse(CHAT_ID, "/start");
@@ -42,6 +36,9 @@ public class TgBotTest {
         assertEquals(HELP_TEXT, r.getText());
     }
 
+    /**
+     * Проверяет, что /help возвращает текст справки.
+     */
     @Test
     void helpReturnsHelpExactly() {
         Response r = logic().createResponse(CHAT_ID, "/help");
@@ -50,6 +47,9 @@ public class TgBotTest {
         assertEquals(HELP_TEXT, r.getText());
     }
 
+    /**
+     * Проверяет что команды не зависят от регистра и пробелов.
+     */
     @Test
     void caseAndSpacesIgnoredForCommands() {
         Response r1 = logic().createResponse(CHAT_ID, "   /HeLp   ");
@@ -58,8 +58,9 @@ public class TgBotTest {
         assertEquals(HELP_TEXT, r2.getText());
     }
 
-
-
+    /**
+     * Проверяет что произвольный текст возвращается как эхо.
+     */
     @Test
     void arbitraryTextEcho() {
         String input = "Привет, логика!";
@@ -68,6 +69,9 @@ public class TgBotTest {
         assertEquals(CHAT_ID, r.getChatId());
     }
 
+    /**
+     * Проверяет что сохраняются исходные пробелы в тексте.
+     */
     @Test
     void echoKeepsOriginalWhitespaces() {
         String input = "  42  :)  ";
@@ -75,6 +79,9 @@ public class TgBotTest {
         assertEquals("Ты написал << " + input + " >>", r.getText());
     }
 
+    /**
+     * Проверяет что null-ввод возвращает null-ответ.
+     */
     @Test
     void nullInputReturnsNull() {
         assertNull(logic().createResponse(CHAT_ID, null));

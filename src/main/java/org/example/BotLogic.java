@@ -1,11 +1,14 @@
 package org.example;
 
 import java.util.Locale;
+
+/**
+ * Логика обработки входящих сообщений бота
+ */
 public class BotLogic {
 
     /**
-     * Обрабатывает входящий текст и возвращает готовый ответ (Response).
-     * Допускается возвращать null если вход пустой/некорректный
+     * Обрабатывает сообщение и формирует ответ
      */
     public Response createResponse(long chatId, String messageText) {
         if (messageText == null) return null;
@@ -17,9 +20,9 @@ public class BotLogic {
             String help = "Привет! Вот список доступных команд:\n" +
                     "/start — приветственное сообщение\n" +
                     "/help — справка по командам";
-            return Response.of(chatId, help);
+            return new Response(chatId, help);
         }
 
-        return Response.of(chatId, "Ты написал << " + messageText + " >>");
+        return new Response(chatId, "Ты написал << " + messageText + " >>");
     }
 }
