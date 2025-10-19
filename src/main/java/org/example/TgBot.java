@@ -9,28 +9,27 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Класс-адаптер для взаимодействия с Telegram API.
- * Обрабатывает входящие сообщения, передавая их в GiftFlow, и отправляет ответы пользователю.
+ * Класс для взаимодействия с tg api.
+ * Обрабатывает входящие сообщения, передавая их в logic, и отправляет ответы пользователю.
  */
 public class TgBot {
 
-    /** Экземпляр Telegram-бота, используемый для получения обновлений и отправки сообщений. */
+    /** Экземпляр tg bota, используемый для получения обновлений и отправки сообщений. */
     private final TelegramBot bot;
 
     /** Логика диалога для подбора подарков. */
-    private final GiftFlow giftFlow;
+    private final BotLogic giftFlow;
 
     /**
-     * Создаёт экземпляр Telegram-бота с указанным токеном.
-     * Инициализирует движок GiftFlow для обработки диалогов.
+     * Создаёт экземпляр tg bota.
      */
     public TgBot(String token) {
         this.bot = new TelegramBot(token);
-        this.giftFlow = new GiftFlow();
+        this.giftFlow = new BotLogic();
     }
 
     /**
-     * Запускает бота, устанавливая слушатель обновлений и выводя сообщение о старте.
+     * Запускает бота.
      */
     public void start() {
         bot.setUpdatesListener(this::onUpdates);
@@ -38,8 +37,8 @@ public class TgBot {
     }
 
     /**
-     * Обрабатывает входящие обновления Telegram.
-     * Проверяет наличие текста, передаёт его в GiftFlow и отправляет ответ пользователю.
+     * Обрабатывает входящие обновления tg.
+     * Проверяет наличие текста, передаёт его в logic и отправляет ответ пользователю.
      */
     private int onUpdates(List<Update> updates) {
         for (Update u : updates) {
