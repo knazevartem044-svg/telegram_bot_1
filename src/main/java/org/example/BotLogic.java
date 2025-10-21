@@ -41,19 +41,7 @@ public class BotLogic {
     /** Коллекция сессий пользователей, сопоставленных по chatId. */
     private final Map<Long, Session> sessions = new HashMap<>();
 
-    /**
-     * Определяет, нужно ли GiftFlow обрабатывать текущее сообщение.
-     * Возвращает true, если сообщение содержит команду или пользователь находится в процессе заполнения анкеты.
-     */
-    public boolean canHandle(long chatId, String messageText) {
-        if (messageText == null) return false;
-        String msg = messageText.trim().toLowerCase(Locale.ROOT);
-        if (msg.equals("/start") || msg.equals("/reset") || msg.equals("/summary") || msg.equals("/help"))
-            return true;
 
-        Session s = sessions.get(chatId);
-        return s != null && s.step != Step.DONE;
-    }
 
     /**
      * Обрабатывает сообщение пользователя, переходя к следующему шагу анкеты или выполняя команды.
