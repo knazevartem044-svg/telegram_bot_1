@@ -55,6 +55,10 @@ class BotLogicTest {
     void testResetCommand() {
         giftFlow.handle(chatId, "/start");
         giftFlow.handle(chatId, "Маме");
+        giftFlow.handle(chatId, "День рождения");
+        giftFlow.handle(chatId, "45");
+        giftFlow.handle(chatId, "Кулинария");
+        giftFlow.handle(chatId, "5000");
 
         Response response = giftFlow.handle(chatId, "/reset");
 
