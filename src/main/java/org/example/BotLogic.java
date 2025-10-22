@@ -83,6 +83,33 @@ public class BotLogic {
                 );
                 return new Response(chatId, helpText);
             }
+            case "/ideas": {
+                Session s = sessions.get(chatId);
+                if (s == null || s.step != Step.DONE) {
+                    return new Response(chatId, "Сначала заполните анкету. Используйте /start, чтобы начать.");
+                }
+
+                String prompt = String.format(
+                        "Подбери 3-5 идей подарков на основе данных:\n" +
+                                "Кому: %s\n" +
+                                "Повод: %s\n" +
+                                "Возраст: %s\n" +
+                                "Интересы: %s\n" +
+                                "Бюджет: %s рублей.\n" +
+                                "Формат ответа: по пунктам, красиво оформлено с эмодзи 🎁.",
+                        s.who, s.occasion, s.age, s.interests, s.budget
+                );
+
+                GiftIdeaService ai = new GiftIdeaService();
+                try {
+                    String ideas = ai.fetchGiftIdeas(prompt);
+                    return new Response(chatId, ideas);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return new Response(chatId, "Не удалось получить ответ от нейросети. Попробуйте позже или перезапустите бота командой /start.");
+                }
+            }
+
             default:
         }
         Session s = sessions.get(chatId);

@@ -1,31 +1,53 @@
 package org.example;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Assertions;
+import static org.junit.jupiter.api.Assertions.*;
 
-class TgBotTest {
+/**
+ * Модульные тесты для проверки логики класса botlogic.
+ * Проверяются команды, переходы между шагами и игнорирование случайных сообщений.
+ */
+class BotLogicTest {
 
-    private final long chatId = 111L;
+    private BotLogic giftFlow;
+    private final long chatId = 12345L;
 
-    /** /reset до /start — разрешён: возвращает стартовый вопрос. */
-    @Test
-    void testResetBeforeStartAllowed() {
-        BotLogic botLogic = new BotLogic();
-
-        Response r = botLogic.handle(chatId, "/reset");
-        Assertions.assertEquals("Анкета сброшена. Кому будем выбирать подарок?", r.getText());
-
-        // После сброса анкета действительно начинается с первого шага
-        Response next = botLogic.handle(chatId, "Маме");
-        Assertions.assertEquals("Повод?", next.getText());
+    @BeforeEach
+    void setUp() {
+        giftFlow = new BotLogic();
     }
 
-    /** /reset в середине анкеты — разрешён: прогресс стирается и снова первый шаг. */
+    /** Проверяет, что команда /start возвращает точное приветственное сообщение. */
     @Test
-    void testResetMidSurveyAllowedAndClearsProgress() {
-        BotLogic botLogic = new BotLogic();
-        botLogic.handle(chatId, "/start");
-        botLogic.handle(chatId, "Маме");
+    void testStartCommand() {
+        Response response = giftFlow.handle(chatId, "/start");
+
+        String expected = String.join("\n",
+                "Привет!",
+                "Я помогу тебе подобрать подарок всего за несколько шагов.",
+                "Чтобы начать скажи, кому будем выбирать подарок?"
+        );
+
+        assertEquals(expected, response.getText());
+        assertEquals(chatId, response.getChatId());
+    }
+
+    /** Проверяет, что команда /help возвращает точный список доступных команд. */
+    @Test
+    void testHelpCommand() {
+        Response response = giftFlow.handle(chatId, "/help");
+
+        String expected = String.join("\n",
+                "Доступные команды:",
+                "/start — начать подбор подарка",
+                "/reset — сбросить текущую анкету",
+                "/summary — показать заполненную анкету",
+                "/help — показать список команд"
+        );
+
+        assertEquals(expected, response.getText());
+    }
 
     /** Проверяет, что команда /reset сбрасывает анкету и возвращает правильный ответ. */
     @Test
@@ -37,59 +59,107 @@ class TgBotTest {
         giftFlow.handle(chatId, "Кулинария");
         giftFlow.handle(chatId, "5000");
 
-        Response after = botLogic.handle(chatId, "Дедушке");
-        Assertions.assertEquals("Повод?", after.getText());
+        Response response = giftFlow.handle(chatId, "/reset");
+
+        assertEquals("Анкета сброшена. Кому будем выбирать подарок?", response.getText());
     }
 
-    /** /reset после завершения анкеты — разрешён и начинает всё заново. */
+    /** Проверяет корректный диалог от начала до завершения анкеты. */
     @Test
-    void testResetAfterCompletionAllowed() {
-        BotLogic botLogic = new BotLogic();
-        botLogic.handle(chatId, "/start");
-        botLogic.handle(chatId, "Маме");
-        botLogic.handle(chatId, "День рождения");
-        botLogic.handle(chatId, "45");
-        botLogic.handle(chatId, "Кулинария");
-        botLogic.handle(chatId, "5000");
+    void testFullSurveyFlow() {
+        giftFlow.handle(chatId, "/start");
 
-        Response reset = botLogic.handle(chatId, "/reset");
-        Assertions.assertEquals("Анкета сброшена. Кому будем выбирать подарок?", reset.getText());
+        Response r1 = giftFlow.handle(chatId, "Маме");
+        assertEquals("Повод?", r1.getText());
 
-        Response r1 = botLogic.handle(chatId, "Папе");
-        Assertions.assertEquals("Повод?", r1.getText());
+        Response r2 = giftFlow.handle(chatId, "День рождения");
+        assertEquals("Возраст?", r2.getText());
+
+        Response r3 = giftFlow.handle(chatId, "45");
+        assertEquals("Интересы?", r3.getText());
+
+        Response r4 = giftFlow.handle(chatId, "Кулинария");
+        assertEquals("Бюджет?", r4.getText());
+
+        Response r5 = giftFlow.handle(chatId, "5000");
+
+        String expected = String.join("\n",
+                "Отлично! Вот твоя анкета:",
+                "",
+                "Твоя анкета:",
+                "Кому — Маме",
+                "Повод — День рождения",
+                "Возраст — 45",
+                "Интересы — Кулинария",
+                "Бюджет — 5000 ₽"
+        );
+
+        assertEquals(expected, r5.getText());
     }
 
-    /** Повторные /reset подряд — идемпотентно: всегда чистое начало. */
+    /** Проверяет, что команда /summary выводит анкету в правильном формате. */
     @Test
-    void testMultipleResetsIdempotent() {
-        BotLogic botLogic = new BotLogic();
+    void testSummaryCommandAfterCompletion() {
+        giftFlow.handle(chatId, "/start");
+        giftFlow.handle(chatId, "Маме");
+        giftFlow.handle(chatId, "День рождения");
+        giftFlow.handle(chatId, "45");
+        giftFlow.handle(chatId, "Кулинария");
+        giftFlow.handle(chatId, "5000");
 
-        Response r1 = botLogic.handle(chatId, "/reset");
-        Assertions.assertEquals("Анкета сброшена. Кому будем выбирать подарок?", r1.getText());
+        Response summary = giftFlow.handle(chatId, "/summary");
 
-        Response r2 = botLogic.handle(chatId, "/reset");
-        Assertions.assertEquals("Анкета сброшена. Кому будем выбирать подарок?", r2.getText());
+        String expected = "Анкета: \n" + String.join("\n",
+                "Твоя анкета:",
+                "Кому — Маме",
+                "Повод — День рождения",
+                "Возраст — 45",
+                "Интересы — Кулинария",
+                "Бюджет — 5000 ₽"
+        );
 
-        Response next = botLogic.handle(chatId, "Сестре");
-        Assertions.assertEquals("Повод?", next.getText());
+        assertEquals(expected, summary.getText());
     }
 
-    /** Изоляция по chatId: сброс одного чата не влияет на другой. */
+    /** Проверяет, что случайный ввод вне анкеты не сохраняется. */
     @Test
-    void testResetIsolationByChatId() {
-        BotLogic botLogic = new BotLogic();
-        long chatA = 100L;
-        long chatB = 200L;
+    void testRandomMessageIgnored() {
+        Response response = giftFlow.handle(chatId, "Привет");
 
-        botLogic.handle(chatA, "/start");
-        botLogic.handle(chatA, "Маме");
-        botLogic.handle(chatB, "/start");
-        botLogic.handle(chatB, "Папе");
-        Response resetA = botLogic.handle(chatA, "/reset");
-        Assertions.assertEquals("Анкета сброшена. Кому будем выбирать подарок?", resetA.getText());
-        Response aNext = botLogic.handle(chatA, "Брату");
-        Assertions.assertEquals("Повод?", aNext.getText());
-        Response bNext = botLogic.handle(chatB, "Юбилей");
-        Assertions.assertEquals("Возраст?", bNext.getText());
+        String expected = String.join("\n",
+                "Я пока не знаю, что с этим делать",
+                "Наберите /start, чтобы начать подбор подарка, или /help для списка команд."
+        );
+
+        assertEquals(expected, response.getText());
     }
+
+    /** Проверяет, что при завершённой анкете ввод не меняет данные. */
+    @Test
+    void testMessageAfterDone() {
+        giftFlow.handle(chatId, "/start");
+        giftFlow.handle(chatId, "Маме");
+        giftFlow.handle(chatId, "День рождения");
+        giftFlow.handle(chatId, "45");
+        giftFlow.handle(chatId, "Кулинария");
+        giftFlow.handle(chatId, "5000");
+
+        Response response = giftFlow.handle(chatId, "ещё текст");
+
+        String expected = String.join("\n",
+                "Анкета уже заполнена: " + String.join("\n",
+                        "Твоя анкета:",
+                        "Кому — Маме",
+                        "Повод — День рождения",
+                        "Возраст — 45",
+                        "Интересы — Кулинария",
+                        "Бюджет — 5000 ₽"
+                ),
+                "Используйте /reset, чтобы начать заново, или /summary для просмотра."
+        );
+
+        assertEquals(expected, response.getText());
+    }
+
+
 }
