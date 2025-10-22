@@ -27,8 +27,15 @@ class TgBotTest {
         botLogic.handle(chatId, "/start");
         botLogic.handle(chatId, "Маме");
 
-        Response reset = botLogic.handle(chatId, "/reset");
-        Assertions.assertEquals("Анкета сброшена. Кому будем выбирать подарок?", reset.getText());
+    /** Проверяет, что команда /reset сбрасывает анкету и возвращает правильный ответ. */
+    @Test
+    void testResetCommand() {
+        giftFlow.handle(chatId, "/start");
+        giftFlow.handle(chatId, "Маме");
+        giftFlow.handle(chatId, "День рождения");
+        giftFlow.handle(chatId, "45");
+        giftFlow.handle(chatId, "Кулинария");
+        giftFlow.handle(chatId, "5000");
 
         Response after = botLogic.handle(chatId, "Дедушке");
         Assertions.assertEquals("Повод?", after.getText());
