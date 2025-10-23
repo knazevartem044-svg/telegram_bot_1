@@ -12,11 +12,14 @@ import java.io.IOException;
  * и получение идей подарков на основе анкеты пользователя.
  */
 public class GiftIdeaService {
-    private static final String API_URL = "https://openrouter.ai/api/v1/chat/completions";
-    private static final String MODEL = "gpt-4o-mini"; // компактная и быстрая модель
+    private final String API_URL = "https://openrouter.ai/api/v1/chat/completions";
+    private final String MODEL = "gpt-4o-mini"; // компактная и быстрая модель
     private final OkHttpClient client = new OkHttpClient();
     private final String apiKey;
 
+    /**
+     * Получает токен (OpenRouter API) из .env файла
+     */
     public GiftIdeaService() {
         Dotenv dotenv = Dotenv.configure().load();
         this.apiKey = dotenv.get("OPENROUTER_API_KEY");
@@ -24,10 +27,9 @@ public class GiftIdeaService {
 
     /**
      * Запрашивает идеи подарков на основе анкеты.
-     *
-     * @param prompt готовый текст запроса для LLM
-     * @return ответ нейросети в виде строки
-     * @throws IOException если не удалось обратиться к API
+     * Создаёт готовый текст запроса для LLM
+     * ответ нейросети в виде строки
+     * IOException если не удалось обратиться к API
      */
     public String fetchGiftIdeas(String prompt) throws IOException {
         JSONObject json = new JSONObject()
