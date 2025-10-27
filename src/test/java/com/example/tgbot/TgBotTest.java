@@ -49,7 +49,8 @@ class BotLogicTest {
         assertEquals(expected, response.getText());
     }
 
-    /** Проверяет, что команда /reset сбрасывает анкету и возвращает правильный ответ. */
+    /** Проверяет, что команда /reset сбрасывает анкету и возвращает правильный ответ,
+     *  а также что анкету действительно очищает. */
     @Test
     void testResetCommand() {
         giftFlow.handle(chatId, "/start");
