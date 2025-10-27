@@ -68,8 +68,13 @@ class BotLogicTest {
         Response summaryAfterReset = giftFlow.handle(chatId, "/summary");
 
         String expected = String.join("\n",
-                "Анкета пуста.",
-                "Наберите /start, чтобы начать подбор подарка."
+                "Анкета: \n" +
+                        "Твоя анкета:\n" +
+                        "Кому — —\n" +
+                        "Повод — —\n" +
+                        "Возраст — —\n" +
+                        "Интересы — —\n" +
+                        "Бюджет — — ₽"
         );
 
         assertEquals(expected, summaryAfterReset.getText());
