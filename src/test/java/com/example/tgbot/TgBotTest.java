@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Модульные тесты для проверки логики класса botlogic.
+ * Модульные тесты для проверки логики класса BotLogic.
  * Проверяются команды, переходы между шагами и игнорирование случайных сообщений.
  */
 class BotLogicTest {
@@ -60,9 +60,24 @@ class BotLogicTest {
         giftFlow.handle(chatId, "Кулинария");
         giftFlow.handle(chatId, "5000");
 
-        Response response = giftFlow.handle(chatId, "/reset");
+        // Выполняем сброс
+        Response resetResponse = giftFlow.handle(chatId, "/reset");
+        assertEquals("Анкета сброшена. Кому будем выбирать подарок?", resetResponse.getText());
 
-        assertEquals("Анкета сброшена. Кому будем выбирать подарок?", response.getText());
+        // Проверяем, что после сброса анкета действительно пуста
+        Response summaryAfterReset = giftFlow.handle(chatId, "/summary");
+
+        String expected = String.join("\n",
+                "Анкета: \n" +
+                        "Твоя анкета:\n" +
+                        "Кому — —\n" +
+                        "Повод — —\n" +
+                        "Возраст — —\n" +
+                        "Интересы — —\n" +
+                        "Бюджет — — ₽"
+        );
+
+        assertEquals(expected, summaryAfterReset.getText());
     }
 
     /** Проверяет корректный диалог от начала до завершения анкеты. */
@@ -161,6 +176,4 @@ class BotLogicTest {
 
         assertEquals(expected, response.getText());
     }
-
-
 }
