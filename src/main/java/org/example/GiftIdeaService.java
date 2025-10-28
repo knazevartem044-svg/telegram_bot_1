@@ -11,7 +11,7 @@ import java.io.IOException;
  * Отвечает за обращение к нейросети (OpenRouter API)
  * и получение идей подарков на основе анкеты пользователя.
  */
-public class GiftIdeaService {
+public class GiftIdeaService implements GiftIdeaGenerator{
     private final String API_URL = "https://openrouter.ai/api/v1/chat/completions";
     private final String MODEL = "gpt-4o-mini"; // компактная и быстрая модель
     private final OkHttpClient client = new OkHttpClient();
@@ -31,6 +31,7 @@ public class GiftIdeaService {
      * ответ нейросети в виде строки
      * IOException если не удалось обратиться к API
      */
+    @Override
     public String fetchGiftIdeas(String prompt) throws IOException {
         JSONObject json = new JSONObject()
                 .put("model", MODEL)

@@ -9,6 +9,31 @@ import java.util.Map;
  */
 public class BotLogic {
 
+    /**
+     * Интерфейсный генератор идей подарков.
+     * Используется для получения ответов от реального сервиса или тестовой заглушки.
+     */
+    private final GiftIdeaGenerator ideaGenerator;
+
+    /**
+     * Конструктор по умолчанию.
+     * Создаёт экземпляр BotLogic с генератором идей по умолчанию.
+     * В рабочей среде используется GiftIdeaService, который обращается
+     * к внешнему API для получения идей подарков.
+     */
+    public BotLogic() {
+        this.ideaGenerator = new GiftIdeaService();
+    }
+
+    /**
+     * Конструктор для тестирования.
+     * Позволяет подставить собственную реализацию интерфейса GiftIdeaGenerator
+     * вместо реального сервиса, например простую заглушку.
+     */
+    public BotLogic(GiftIdeaGenerator ideaGenerator) {
+        this.ideaGenerator = ideaGenerator;
+    }
+
     /** Перечисление шагов диалога, определяющее порядок вопросов анкеты. */
     private enum Step { WHO, OCCASION, AGE, INTERESTS, BUDGET, DONE }
 
@@ -100,9 +125,8 @@ public class BotLogic {
                         s.who, s.occasion, s.age, s.interests, s.budget
                 );
 
-                GiftIdeaService ai = new GiftIdeaService();
                 try {
-                    String ideas = ai.fetchGiftIdeas(prompt);
+                    String ideas = ideaGenerator.fetchGiftIdeas(prompt);
                     return new Response(chatId, ideas);
                 } catch (Exception e) {
                     e.printStackTrace();

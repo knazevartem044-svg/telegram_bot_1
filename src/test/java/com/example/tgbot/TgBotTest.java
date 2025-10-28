@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Модульные тесты для проверки логики класса botlogic.
+ * Модульные тесты для проверки логики класса BotLogic.
  * Проверяются команды, переходы между шагами и игнорирование случайных сообщений.
  */
 class BotLogicTest {
@@ -49,7 +49,8 @@ class BotLogicTest {
         assertEquals(expected, response.getText());
     }
 
-    /** Проверяет, что команда /reset сбрасывает анкету и возвращает правильный ответ. */
+    /** Проверяет, что команда /reset сбрасывает анкету и возвращает правильный ответ,
+     *  а также что анкету действительно очищает. */
     @Test
     void testResetCommand() {
         giftFlow.handle(chatId, "/start");
@@ -59,9 +60,24 @@ class BotLogicTest {
         giftFlow.handle(chatId, "Кулинария");
         giftFlow.handle(chatId, "5000");
 
-        Response response = giftFlow.handle(chatId, "/reset");
+        // Выполняем сброс
+        Response resetResponse = giftFlow.handle(chatId, "/reset");
+        assertEquals("Анкета сброшена. Кому будем выбирать подарок?", resetResponse.getText());
 
-        assertEquals("Анкета сброшена. Кому будем выбирать подарок?", response.getText());
+        // Проверяем, что после сброса анкета действительно пуста
+        Response summaryAfterReset = giftFlow.handle(chatId, "/summary");
+
+        String expected = String.join("\n",
+                "Анкета: \n" +
+                        "Твоя анкета:\n" +
+                        "Кому — —\n" +
+                        "Повод — —\n" +
+                        "Возраст — —\n" +
+                        "Интересы — —\n" +
+                        "Бюджет — — ₽"
+        );
+
+        assertEquals(expected, summaryAfterReset.getText());
     }
 
     /** Проверяет корректный диалог от начала до завершения анкеты. */
@@ -160,6 +176,34 @@ class BotLogicTest {
 
         assertEquals(expected, response.getText());
     }
+    @Test
+    void testIdeasCommandWithStubbedGenerator() throws Exception {
+        // Заглушка: просто возвращает заранее заготовленный текст независимо от prompt
+        GiftIdeaGenerator stub = prompt -> String.join("\n",
+                "🎁 Идея 1: Фитнес-браслет",
+                "🎁 Идея 2: Беспроводные наушники",
+                "🎁 Идея 3: Абонемент в спортзал"
+        );
 
+        // Внедряем заглушку через тестовый конструктор
+        BotLogic logic = new BotLogic(stub);
+        long chatId = 2025L;
+
+        // Заполняем анкету до состояния DONE
+        logic.handle(chatId, "/start");
+        logic.handle(chatId, "Брату");
+        logic.handle(chatId, "День рождения");
+        logic.handle(chatId, "30");
+        logic.handle(chatId, "Спорт, техника");
+        logic.handle(chatId, "7000");
+
+        // Команда /ideas должна вернуть ответ заглушки
+        Response resp = logic.handle(chatId, "/ideas");
+
+        assertEquals(chatId, resp.getChatId());
+        assertTrue(resp.getText().contains("🎁 Идея 1"));
+        assertTrue(resp.getText().contains("🎁 Идея 2"));
+        assertTrue(resp.getText().contains("🎁 Идея 3"));
+    }
 
 }
