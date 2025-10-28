@@ -34,36 +34,51 @@ public class BotLogic {
         this.ideaGenerator = ideaGenerator;
     }
 
-    /** Перечисление шагов диалога, определяющее порядок вопросов анкеты. */
-    private enum Step { WHO, OCCASION, AGE, INTERESTS, BUDGET, DONE }
+    /**
+     * Перечисление шагов диалога, определяющее порядок вопросов анкеты.
+     */
+    private enum Step {WHO, OCCASION, AGE, INTERESTS, BUDGET, DONE}
 
     /**
      * Класс, представляющий сессию пользователя.
      * Хранит текущее состояние анкеты и все введённые ответы.
      */
     private final class Session {
-        /** Текущий шаг заполнения анкеты. */
+        /**
+         * Текущий шаг заполнения анкеты.
+         */
         Step step = Step.WHO;
 
-        /** Кому предназначен подарок. */
+        /**
+         * Кому предназначен подарок.
+         */
         String who;
 
-        /** Повод для подарка. */
+        /**
+         * Повод для подарка.
+         */
         String occasion;
 
-        /** Возраст получателя подарка. */
+        /**
+         * Возраст получателя подарка.
+         */
         String age;
 
-        /** Интересы получателя. */
+        /**
+         * Интересы получателя.
+         */
         String interests;
 
-        /** Бюджет, выделенный на подарок. */
+        /**
+         * Бюджет, выделенный на подарок.
+         */
         String budget;
     }
 
-    /** Коллекция сессий пользователей, сопоставленных по chatId. */
+    /**
+     * Коллекция сессий пользователей, сопоставленных по chatId.
+     */
     private final Map<Long, Session> sessions = new HashMap<>();
-
 
 
     /**
@@ -79,11 +94,10 @@ public class BotLogic {
                 Session session = new Session();
                 sessions.put(chatId, session);
 
-                String intro = String.join("\n",
-                        "Привет!",
-                        "Я помогу тебе подобрать подарок всего за несколько шагов.",
-                        "Чтобы начать скажи, кому будем выбирать подарок?"
-                );
+                String intro = """
+                        Привет!
+                        Я помогу тебе подобрать подарок всего за несколько шагов.
+                        Чтобы начать скажи, кому будем выбирать подарок?""";
 
                 return new Response(chatId, intro);
             }
@@ -99,13 +113,13 @@ public class BotLogic {
                 return new Response(chatId, "Анкета: \n" + humanSummary(s));
             }
             case "/help": {
-                String helpText = String.join("\n",
-                        "Доступные команды:",
-                        "/start — начать подбор подарка",
-                        "/reset — сбросить текущую анкету",
-                        "/summary — показать заполненную анкету",
-                        "/help — показать список команд"
-                );
+                String helpText = """
+                        Доступные команды:
+                        /start — начать подбор подарка
+                        /reset — сбросить текущую анкету
+                        /summary — показать заполненную анкету
+                        /help — показать список команд""";
+
                 return new Response(chatId, helpText);
             }
             case "/ideas": {
