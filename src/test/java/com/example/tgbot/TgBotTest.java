@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Assertions;
  * Модульные тесты для проверки логики класса BotLogic.
  * Проверяются команды, переходы между шагами и игнорирование случайных сообщений.
  */
-class BotLogicTest {
+class TgBotTest {
 
     private BotLogic giftFlow;
     private final long chatId = 12345L;
@@ -18,39 +18,43 @@ class BotLogicTest {
         giftFlow = new BotLogic();
     }
 
-    /** Проверяет, что команда /start возвращает точное приветственное сообщение. */
+    /**
+     * Проверяет, что команда /start возвращает точное приветственное сообщение.
+     */
     @Test
     void testStartCommand() {
         Response response = giftFlow.handle(chatId, "/start");
 
-        String expected = String.join("\n",
-                "Привет!",
-                "Я помогу тебе подобрать подарок всего за несколько шагов.",
-                "Чтобы начать скажи, кому будем выбирать подарок?"
-        );
+        String expected = """
+                Привет!
+                Я помогу тебе подобрать подарок всего за несколько шагов.
+                Чтобы начать скажи, кому будем выбирать подарок?""";
 
         Assertions.assertEquals(expected, response.getText());
         Assertions.assertEquals(chatId, response.getChatId());
     }
 
-    /** Проверяет, что команда /help возвращает точный список доступных команд. */
+    /**
+     * Проверяет, что команда /help возвращает точный список доступных команд.
+     */
     @Test
     void testHelpCommand() {
         Response response = giftFlow.handle(chatId, "/help");
 
-        String expected = String.join("\n",
-                "Доступные команды:",
-                "/start — начать подбор подарка",
-                "/reset — сбросить текущую анкету",
-                "/summary — показать заполненную анкету",
-                "/help — показать список команд"
-        );
+        String expected = """
+                Доступные команды:
+                /start — начать подбор подарка
+                /reset — сбросить текущую анкету
+                /summary — показать заполненную анкету
+                /help — показать список команд""";
 
         Assertions.assertEquals(expected, response.getText());
     }
 
-    /** Проверяет, что команда /reset сбрасывает анкету и возвращает правильный ответ,
-     *  а также что анкету действительно очищает. */
+    /**
+     * Проверяет, что команда /reset сбрасывает анкету и возвращает правильный ответ,
+     * а также что анкету действительно очищает.
+     */
     @Test
     void testResetCommand() {
         giftFlow.handle(chatId, "/start");
@@ -67,20 +71,21 @@ class BotLogicTest {
         // Проверяем, что после сброса анкета действительно пуста
         Response summaryAfterReset = giftFlow.handle(chatId, "/summary");
 
-        String expected = String.join("\n",
-                "Анкета: \n" +
-                        "Твоя анкета:\n" +
-                        "Кому — —\n" +
-                        "Повод — —\n" +
-                        "Возраст — —\n" +
-                        "Интересы — —\n" +
-                        "Бюджет — — ₽"
-        );
+        String expected = """
+                Анкета:\s
+                Твоя анкета:
+                Кому — —
+                Повод — —
+                Возраст — —
+                Интересы — —
+                Бюджет — — ₽""";
 
         Assertions.assertEquals(expected, summaryAfterReset.getText());
     }
 
-    /** Проверяет корректный диалог от начала до завершения анкеты. */
+    /**
+     * Проверяет корректный диалог от начала до завершения анкеты.
+     */
     @Test
     void testFullSurveyFlow() {
         giftFlow.handle(chatId, "/start");
@@ -99,21 +104,22 @@ class BotLogicTest {
 
         Response r5 = giftFlow.handle(chatId, "5000");
 
-        String expected = String.join("\n",
-                "Отлично! Вот твоя анкета:",
-                "",
-                "Твоя анкета:",
-                "Кому — Маме",
-                "Повод — День рождения",
-                "Возраст — 45",
-                "Интересы — Кулинария",
-                "Бюджет — 5000 ₽"
-        );
+        String expected = """
+                Отлично! Вот твоя анкета:
+                
+                Твоя анкета:
+                Кому — Маме
+                Повод — День рождения
+                Возраст — 45
+                Интересы — Кулинария
+                Бюджет — 5000 ₽""";
 
         Assertions.assertEquals(expected, r5.getText());
     }
 
-    /** Проверяет, что команда /summary выводит анкету в правильном формате. */
+    /**
+     * Проверяет, что команда /summary выводит анкету в правильном формате.
+     */
     @Test
     void testSummaryCommandAfterCompletion() {
         giftFlow.handle(chatId, "/start");
@@ -125,32 +131,35 @@ class BotLogicTest {
 
         Response summary = giftFlow.handle(chatId, "/summary");
 
-        String expected = "Анкета: \n" + String.join("\n",
-                "Твоя анкета:",
-                "Кому — Маме",
-                "Повод — День рождения",
-                "Возраст — 45",
-                "Интересы — Кулинария",
-                "Бюджет — 5000 ₽"
-        );
+        String expected = """
+                Анкета:\s
+                Твоя анкета:
+                Кому — Маме
+                Повод — День рождения
+                Возраст — 45
+                Интересы — Кулинария
+                Бюджет — 5000 ₽""";
 
         Assertions.assertEquals(expected, summary.getText());
     }
 
-    /** Проверяет, что случайный ввод вне анкеты не сохраняется. */
+    /**
+     * Проверяет, что случайный ввод вне анкеты не сохраняется.
+     */
     @Test
     void testRandomMessageIgnored() {
         Response response = giftFlow.handle(chatId, "Привет");
 
-        String expected = String.join("\n",
-                "Я пока не знаю, что с этим делать",
-                "Наберите /start, чтобы начать подбор подарка, или /help для списка команд."
-        );
+        String expected = """
+                Я пока не знаю, что с этим делать
+                Наберите /start, чтобы начать подбор подарка, или /help для списка команд.""";
 
         Assertions.assertEquals(expected, response.getText());
     }
 
-    /** Проверяет, что при завершённой анкете ввод не меняет данные. */
+    /**
+     * Проверяет, что при завершённой анкете ввод не меняет данные.
+     */
     @Test
     void testMessageAfterDone() {
         giftFlow.handle(chatId, "/start");
@@ -162,22 +171,21 @@ class BotLogicTest {
 
         Response response = giftFlow.handle(chatId, "ещё текст");
 
-        String expected = String.join("\n",
-                "Анкета уже заполнена: " + String.join("\n",
-                        "Твоя анкета:",
-                        "Кому — Маме",
-                        "Повод — День рождения",
-                        "Возраст — 45",
-                        "Интересы — Кулинария",
-                        "Бюджет — 5000 ₽"
-                ),
-                "Используйте /reset, чтобы начать заново, или /summary для просмотра."
-        );
+        String expected = """
+                Анкета уже заполнена: Твоя анкета:
+                Кому — Маме
+                Повод — День рождения
+                Возраст — 45
+                Интересы — Кулинария
+                Бюджет — 5000 ₽
+                Используйте /reset, чтобы начать заново, или /summary для просмотра.""";
 
         Assertions.assertEquals(expected, response.getText());
     }
 
-    /** Проверяет работу команды /ideas с использованием тестовой заглушки. */
+    /**
+     * Проверяет работу команды /ideas с использованием тестовой заглушки.
+     */
     @Test
     void testIdeasCommandWithStubbedGenerator() throws Exception {
         GiftIdeaGenerator stub = prompt -> String.join("\n",
