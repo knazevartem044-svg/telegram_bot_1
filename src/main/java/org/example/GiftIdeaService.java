@@ -8,32 +8,74 @@ import org.json.JSONObject;
 import java.io.IOException;
 
 /**
- * Отвечает за обращение к нейросети (OpenRouter API)
- * и получение идей подарков на основе анкеты пользователя.
+ * Сервис, обращающийся к OpenRouter API
+ * для генерации идей подарков по анкете пользователя.
  */
-public class GiftIdeaService implements GiftIdeaGenerator{
+public class GiftIdeaService implements GiftIdeaGenerator {
+
     /**
      * URL эндпоинта OpenRouter API для отправки запросов.
      */
-    private final String API_URL = "https://openrouter.ai/api/v1/chat/completions";
+    private static final String API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
     /**
-     * Имя используемой модели LLM (компактная и быстрая версия GPT-4).
+     * Имя используемой модели нейросети.
      */
-    private final String MODEL = "gpt-4o-mini";
+    private static final String MODEL = "gpt-4o-mini";
 
     /**
-     * HTTP-клиент для выполнения запросов к API.
+     * Название заголовка для авторизации.
+     */
+    private static final String HEADER_AUTH = "Authorization";
+
+    /**
+     * Название заголовка для указания типа содержимого.
+     */
+    private static final String HEADER_CONTENT_TYPE = "Content-Type";
+
+    /**
+     * Название заголовка для ссылки на источник запроса.
+     */
+    private static final String HEADER_REFERER = "HTTP-Referer";
+
+    /**
+     * Название заголовка, указывающего имя приложения.
+     */
+    private static final String HEADER_TITLE = "X-Title";
+
+    /**
+     * MIME-тип тела запроса.
+     */
+    private static final String CONTENT_TYPE_VALUE = "application/json; charset=utf-8";
+
+    /**
+     * Значение заголовка Referer — ссылка на GitHub-аккаунт разработчика.
+     */
+    private static final String REFERER_VALUE = "https://github.com/stepantsib";
+
+    /**
+     * Название клиента, отображаемое в панели OpenRouter.
+     */
+    private static final String TITLE_VALUE = "Gift Idea Bot";
+
+    /**
+     * Системное сообщение, задающее роль нейросети.
+     */
+    private static final String SYSTEM_PROMPT =
+            "Ты помощник, предлагающий креативные идеи подарков. Форматируй красиво и с эмодзи 🎁.";
+
+    /**
+     * HTTP-клиент для выполнения запросов.
      */
     private final OkHttpClient client = new OkHttpClient();
 
     /**
-     * Ключ API, получаемый из .env файла для авторизации на OpenRouter.
+     * API-ключ, загружаемый из .env файла.
      */
     private final String apiKey;
 
     /**
-     * Получает токен (OpenRouter API) из .env файла
+     * Загружает API-ключ из .env файла.
      */
     public GiftIdeaService() {
         Dotenv dotenv = Dotenv.configure().load();
@@ -41,10 +83,8 @@ public class GiftIdeaService implements GiftIdeaGenerator{
     }
 
     /**
-     * Запрашивает идеи подарков на основе анкеты.
-     * Создаёт готовый текст запроса для LLM
-     * ответ нейросети в виде строки
-     * IOException если не удалось обратиться к API
+     * Отправляет запрос к OpenRouter и возвращает сгенерированные идеи подарков.
+     * Если запрос неудачен, выбрасывается IOException.
      */
     @Override
     public String fetchGiftIdeas(String prompt) throws IOException {
@@ -53,36 +93,35 @@ public class GiftIdeaService implements GiftIdeaGenerator{
                 .put("messages", new JSONArray()
                         .put(new JSONObject()
                                 .put("role", "system")
-                                .put("content", "Ты помощник, предлагающий креативные идеи подарков. Форматируй красиво и с эмодзи 🎁."))
+                                .put("content", SYSTEM_PROMPT))
                         .put(new JSONObject()
                                 .put("role", "user")
                                 .put("content", prompt)));
 
         RequestBody body = RequestBody.create(json.toString(),
-                MediaType.get("application/json; charset=utf-8"));
+                MediaType.get(CONTENT_TYPE_VALUE));
 
         Request request = new Request.Builder()
                 .url(API_URL)
-                .header("Authorization", "Bearer " + apiKey)
-                .header("Content-Type", "application/json")
-                .header("HTTP-Referer", "https://github.com/stepantsib")
-                .header("X-Title", "Gift Idea Bot")
+                .header(HEADER_AUTH, "Bearer " + apiKey)
+                .header(HEADER_CONTENT_TYPE, CONTENT_TYPE_VALUE)
+                .header(HEADER_REFERER, REFERER_VALUE)
+                .header(HEADER_TITLE, TITLE_VALUE)
                 .post(body)
                 .build();
 
         try (okhttp3.Response response = client.newCall(request).execute()) {
-            {
-                if (!response.isSuccessful()) {
-                    throw new IOException("Ошибка от OpenRouter: " + response.code());
-                }
-                String bodyString = response.body().string();
-                JSONObject jsonResp = new JSONObject(bodyString);
-                return jsonResp.getJSONArray("choices")
-                        .getJSONObject(0)
-                        .getJSONObject("message")
-                        .getString("content")
-                        .trim();
+            if (!response.isSuccessful()) {
+                throw new IOException("Ошибка от OpenRouter: " + response.code());
             }
+
+            String bodyString = response.body().string();
+            JSONObject jsonResp = new JSONObject(bodyString);
+            return jsonResp.getJSONArray("choices")
+                    .getJSONObject(0)
+                    .getJSONObject("message")
+                    .getString("content")
+                    .trim();
         }
     }
 }
