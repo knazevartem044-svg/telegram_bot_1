@@ -12,9 +12,24 @@ import java.io.IOException;
  * и получение идей подарков на основе анкеты пользователя.
  */
 public class GiftIdeaService implements GiftIdeaGenerator{
+    /**
+     * URL эндпоинта OpenRouter API для отправки запросов.
+     */
     private final String API_URL = "https://openrouter.ai/api/v1/chat/completions";
-    private final String MODEL = "gpt-4o-mini"; // компактная и быстрая модель
+
+    /**
+     * Имя используемой модели LLM (компактная и быстрая версия GPT-4).
+     */
+    private final String MODEL = "gpt-4o-mini";
+
+    /**
+     * HTTP-клиент для выполнения запросов к API.
+     */
     private final OkHttpClient client = new OkHttpClient();
+
+    /**
+     * Ключ API, получаемый из .env файла для авторизации на OpenRouter.
+     */
     private final String apiKey;
 
     /**
