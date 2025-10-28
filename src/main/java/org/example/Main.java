@@ -2,7 +2,7 @@ package org.example;
 import io.github.cdimascio.dotenv.Dotenv;
 /**
  * Главный класс приложения.
- * Загружает токен из .env или переменной окружения
+ * Загружает токены из .env или переменной окружения
  * и запускает Telegram-бота.
  */
 public class Main {
