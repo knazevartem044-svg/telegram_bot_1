@@ -2,7 +2,7 @@ package org.example;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Assertions;
 
 /**
  * Модульные тесты для проверки логики класса BotLogic.
@@ -29,8 +29,8 @@ class BotLogicTest {
                 "Чтобы начать скажи, кому будем выбирать подарок?"
         );
 
-        assertEquals(expected, response.getText());
-        assertEquals(chatId, response.getChatId());
+        Assertions.assertEquals(expected, response.getText());
+        Assertions.assertEquals(chatId, response.getChatId());
     }
 
     /** Проверяет, что команда /help возвращает точный список доступных команд. */
@@ -46,7 +46,7 @@ class BotLogicTest {
                 "/help — показать список команд"
         );
 
-        assertEquals(expected, response.getText());
+        Assertions.assertEquals(expected, response.getText());
     }
 
     /** Проверяет, что команда /reset сбрасывает анкету и возвращает правильный ответ,
@@ -62,7 +62,7 @@ class BotLogicTest {
 
         // Выполняем сброс
         Response resetResponse = giftFlow.handle(chatId, "/reset");
-        assertEquals("Анкета сброшена. Кому будем выбирать подарок?", resetResponse.getText());
+        Assertions.assertEquals("Анкета сброшена. Кому будем выбирать подарок?", resetResponse.getText());
 
         // Проверяем, что после сброса анкета действительно пуста
         Response summaryAfterReset = giftFlow.handle(chatId, "/summary");
@@ -77,7 +77,7 @@ class BotLogicTest {
                         "Бюджет — — ₽"
         );
 
-        assertEquals(expected, summaryAfterReset.getText());
+        Assertions.assertEquals(expected, summaryAfterReset.getText());
     }
 
     /** Проверяет корректный диалог от начала до завершения анкеты. */
@@ -86,16 +86,16 @@ class BotLogicTest {
         giftFlow.handle(chatId, "/start");
 
         Response r1 = giftFlow.handle(chatId, "Маме");
-        assertEquals("Повод?", r1.getText());
+        Assertions.assertEquals("Повод?", r1.getText());
 
         Response r2 = giftFlow.handle(chatId, "День рождения");
-        assertEquals("Возраст?", r2.getText());
+        Assertions.assertEquals("Возраст?", r2.getText());
 
         Response r3 = giftFlow.handle(chatId, "45");
-        assertEquals("Интересы?", r3.getText());
+        Assertions.assertEquals("Интересы?", r3.getText());
 
         Response r4 = giftFlow.handle(chatId, "Кулинария");
-        assertEquals("Бюджет?", r4.getText());
+        Assertions.assertEquals("Бюджет?", r4.getText());
 
         Response r5 = giftFlow.handle(chatId, "5000");
 
@@ -110,7 +110,7 @@ class BotLogicTest {
                 "Бюджет — 5000 ₽"
         );
 
-        assertEquals(expected, r5.getText());
+        Assertions.assertEquals(expected, r5.getText());
     }
 
     /** Проверяет, что команда /summary выводит анкету в правильном формате. */
@@ -134,7 +134,7 @@ class BotLogicTest {
                 "Бюджет — 5000 ₽"
         );
 
-        assertEquals(expected, summary.getText());
+        Assertions.assertEquals(expected, summary.getText());
     }
 
     /** Проверяет, что случайный ввод вне анкеты не сохраняется. */
@@ -147,7 +147,7 @@ class BotLogicTest {
                 "Наберите /start, чтобы начать подбор подарка, или /help для списка команд."
         );
 
-        assertEquals(expected, response.getText());
+        Assertions.assertEquals(expected, response.getText());
     }
 
     /** Проверяет, что при завершённой анкете ввод не меняет данные. */
@@ -174,6 +174,34 @@ class BotLogicTest {
                 "Используйте /reset, чтобы начать заново, или /summary для просмотра."
         );
 
-        assertEquals(expected, response.getText());
+        Assertions.assertEquals(expected, response.getText());
     }
+
+    /** Проверяет работу команды /ideas с использованием тестовой заглушки. */
+    @Test
+    void testIdeasCommandWithStubbedGenerator() throws Exception {
+        GiftIdeaGenerator stub = prompt -> String.join("\n",
+                "🎁 Идея 1: Фитнес-браслет",
+                "🎁 Идея 2: Беспроводные наушники",
+                "🎁 Идея 3: Абонемент в спортзал"
+        );
+
+        BotLogic logic = new BotLogic(stub);
+        long chatId = 2025L;
+
+        logic.handle(chatId, "/start");
+        logic.handle(chatId, "Брату");
+        logic.handle(chatId, "День рождения");
+        logic.handle(chatId, "30");
+        logic.handle(chatId, "Спорт, техника");
+        logic.handle(chatId, "7000");
+
+        Response resp = logic.handle(chatId, "/ideas");
+
+        Assertions.assertEquals(chatId, resp.getChatId());
+        Assertions.assertTrue(resp.getText().contains("🎁 Идея 1"));
+        Assertions.assertTrue(resp.getText().contains("🎁 Идея 2"));
+        Assertions.assertTrue(resp.getText().contains("🎁 Идея 3"));
+    }
+
 }
