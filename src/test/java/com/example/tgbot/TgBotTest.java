@@ -1,215 +1,248 @@
 package org.example;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Assertions;
+import com.google.gson.Gson;
+import com.pengrad.telegrambot.model.*;
+import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
+import com.pengrad.telegrambot.model.request.ReplyKeyboardMarkup;
+import org.example.db.FormRepository;
+import org.example.model.UserForm;
+import org.junit.jupiter.api.*;
+
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.sql.SQLException;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Модульные тесты для проверки логики класса BotLogic.
- * Проверяются команды, переходы между шагами и игнорирование случайных сообщений.
+ * Полный интеграционный тест бота без Mockito.
+ * Работает с Java 21, использует JSON-создание Update для Telegram SDK.
  */
-class TgBotTest {
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+public class TgBotTest {
 
-    private BotLogic giftFlow;
-    private final long chatId = 12345L;
+    private BotLogic logic;
+    private FormRepository repo;
+    private final long chatId = 777000111L;
+    private static final Gson gson = new Gson();
+
+    // ---------- JSON-эмуляция Update ----------
+
+    private static Update textUpdate(long chatId, String text) {
+        String json = String.format("""
+            {
+              "update_id": 1,
+              "message": {
+                "message_id": 10,
+                "chat": {"id": %d, "type": "private"},
+                "text": "%s"
+              }
+            }
+            """, chatId, text.replace("\"", "\\\""));
+        return gson.fromJson(json, Update.class);
+    }
+
+    private static Update callbackUpdate(long chatId, String data) {
+        String json = String.format("""
+            {
+              "update_id": 2,
+              "callback_query": {
+                "id": "123",
+                "data": "%s",
+                "message": {
+                  "message_id": 20,
+                  "chat": {"id": %d, "type": "private"}
+                }
+              }
+            }
+            """, data.replace("\"", "\\\""), chatId);
+        return gson.fromJson(json, Update.class);
+    }
+
+    // ---------- Заглушки сервиса генерации идей ----------
+
+    static class StubIdeaServiceOk extends GiftIdeaService {
+        @Override
+        public String fetchGiftIdeas(String prompt) {
+            return "🎁 Идея 1\n🎁 Идея 2\n🎁 Идея 3";
+        }
+    }
+
+    static class StubIdeaServiceFail extends GiftIdeaService {
+        @Override
+        public String fetchGiftIdeas(String prompt) throws IOException {
+            throw new IOException("fail");
+        }
+    }
+
+    private static void injectIdeaService(BotLogic logic, GiftIdeaService stub) throws Exception {
+        Field f = BotLogic.class.getDeclaredField("ideaService");
+        f.setAccessible(true);
+        f.set(logic, stub);
+    }
+
+    // ---------- Подготовка ----------
 
     @BeforeEach
-    void setUp() {
-        giftFlow = new BotLogic();
+    void setup() {
+        repo = new FormRepository();
+        logic = new BotLogic();
     }
 
-    /**
-     * Проверяет, что команда /start возвращает точное приветственное сообщение.
-     */
-    @Test
-    void testStartCommand() {
-        Response response = giftFlow.handle(chatId, "/start");
+    // ---------- Тесты логики ----------
 
-        String expected = """
-                Привет!
-                Я помогу тебе подобрать подарок всего за несколько шагов.
-                Чтобы начать скажи, кому будем выбирать подарок?""";
-
-        Assertions.assertEquals(expected, response.getText());
-        Assertions.assertEquals(chatId, response.getChatId());
+    @Test @Order(1)
+    void help_command_shows_menu() {
+        Response r = logic.processUpdate(textUpdate(chatId, "/help"));
+        assertNotNull(r);
+        assertTrue(r.getText().contains("Команды"));
+        assertTrue(r.getMarkup() instanceof ReplyKeyboardMarkup);
     }
 
-    /**
-     * Проверяет, что команда /help возвращает точный список доступных команд.
-     */
     @Test
-    void testHelpCommand() {
-        Response response = giftFlow.handle(chatId, "/help");
+    @Order(2)
+    void forms_empty_list() {
+        // Очистим все анкеты перед проверкой
+        repo.listNames(chatId).forEach(n -> repo.delete(chatId, n));
 
-        String expected = """
-                Доступные команды:
-                /start — начать подбор подарка
-                /reset — сбросить текущую анкету
-                /summary — показать заполненную анкету
-                /help — показать список команд""";
+        Response r = logic.processUpdate(textUpdate(chatId, "/forms"));
+        String text = r.getText();
 
-        Assertions.assertEquals(expected, response.getText());
-    }
-
-    /**
-     * Проверяет, что команда /reset сбрасывает анкету и возвращает правильный ответ,
-     * а также что анкету действительно очищает.
-     */
-    @Test
-    void testResetCommand() {
-        giftFlow.handle(chatId, "/start");
-        giftFlow.handle(chatId, "Маме");
-        giftFlow.handle(chatId, "День рождения");
-        giftFlow.handle(chatId, "45");
-        giftFlow.handle(chatId, "Кулинария");
-        giftFlow.handle(chatId, "5000");
-
-        // Выполняем сброс
-        Response resetResponse = giftFlow.handle(chatId, "/reset");
-        Assertions.assertEquals("Анкета сброшена. Кому будем выбирать подарок?", resetResponse.getText());
-
-        // Проверяем, что после сброса анкета действительно пуста
-        Response summaryAfterReset = giftFlow.handle(chatId, "/summary");
-
-        String expected = """
-                Анкета:\s
-                Твоя анкета:
-                Кому — —
-                Повод — —
-                Возраст — —
-                Интересы — —
-                Бюджет — — ₽""";
-
-        Assertions.assertEquals(expected, summaryAfterReset.getText());
-    }
-
-    /**
-     * Проверяет корректный диалог от начала до завершения анкеты.
-     */
-    @Test
-    void testFullSurveyFlow() {
-        giftFlow.handle(chatId, "/start");
-
-        Response r1 = giftFlow.handle(chatId, "Маме");
-        Assertions.assertEquals("Повод?", r1.getText());
-
-        Response r2 = giftFlow.handle(chatId, "День рождения");
-        Assertions.assertEquals("Возраст?", r2.getText());
-
-        Response r3 = giftFlow.handle(chatId, "45");
-        Assertions.assertEquals("Интересы?", r3.getText());
-
-        Response r4 = giftFlow.handle(chatId, "Кулинария");
-        Assertions.assertEquals("Бюджет?", r4.getText());
-
-        Response r5 = giftFlow.handle(chatId, "5000");
-
-        String expected = """
-                Отлично! Вот твоя анкета:
-                
-                Твоя анкета:
-                Кому — Маме
-                Повод — День рождения
-                Возраст — 45
-                Интересы — Кулинария
-                Бюджет — 5000 ₽""";
-
-        Assertions.assertEquals(expected, r5.getText());
-    }
-
-    /**
-     * Проверяет, что команда /summary выводит анкету в правильном формате.
-     */
-    @Test
-    void testSummaryCommandAfterCompletion() {
-        giftFlow.handle(chatId, "/start");
-        giftFlow.handle(chatId, "Маме");
-        giftFlow.handle(chatId, "День рождения");
-        giftFlow.handle(chatId, "45");
-        giftFlow.handle(chatId, "Кулинария");
-        giftFlow.handle(chatId, "5000");
-
-        Response summary = giftFlow.handle(chatId, "/summary");
-
-        String expected = """
-                Анкета:\s
-                Твоя анкета:
-                Кому — Маме
-                Повод — День рождения
-                Возраст — 45
-                Интересы — Кулинария
-                Бюджет — 5000 ₽""";
-
-        Assertions.assertEquals(expected, summary.getText());
-    }
-
-    /**
-     * Проверяет, что случайный ввод вне анкеты не сохраняется.
-     */
-    @Test
-    void testRandomMessageIgnored() {
-        Response response = giftFlow.handle(chatId, "Привет");
-
-        String expected = """
-                Я пока не знаю, что с этим делать
-                Наберите /start, чтобы начать подбор подарка, или /help для списка команд.""";
-
-        Assertions.assertEquals(expected, response.getText());
-    }
-
-    /**
-     * Проверяет, что при завершённой анкете ввод не меняет данные.
-     */
-    @Test
-    void testMessageAfterDone() {
-        giftFlow.handle(chatId, "/start");
-        giftFlow.handle(chatId, "Маме");
-        giftFlow.handle(chatId, "День рождения");
-        giftFlow.handle(chatId, "45");
-        giftFlow.handle(chatId, "Кулинария");
-        giftFlow.handle(chatId, "5000");
-
-        Response response = giftFlow.handle(chatId, "ещё текст");
-
-        String expected = """
-                Анкета уже заполнена: Твоя анкета:
-                Кому — Маме
-                Повод — День рождения
-                Возраст — 45
-                Интересы — Кулинария
-                Бюджет — 5000 ₽
-                Используйте /reset, чтобы начать заново, или /summary для просмотра.""";
-
-        Assertions.assertEquals(expected, response.getText());
-    }
-
-    /**
-     * Проверяет работу команды /ideas с использованием тестовой заглушки.
-     */
-    @Test
-    void testIdeasCommandWithStubbedGenerator() throws Exception {
-        GiftIdeaGenerator stub = prompt -> String.join("\n",
-                "🎁 Идея 1: Фитнес-браслет",
-                "🎁 Идея 2: Беспроводные наушники",
-                "🎁 Идея 3: Абонемент в спортзал"
+        assertTrue(
+                text.contains("нет анкет") ||
+                        text.contains("У вас пока нет анкет") ||
+                        text.toLowerCase().contains("анкет нет"),
+                "Ожидали сообщение о пустом списке анкет, но получили: " + text
         );
-
-        BotLogic logic = new BotLogic(stub);
-        long chatId = 2025L;
-
-        logic.handle(chatId, "/start");
-        logic.handle(chatId, "Брату");
-        logic.handle(chatId, "День рождения");
-        logic.handle(chatId, "30");
-        logic.handle(chatId, "Спорт, техника");
-        logic.handle(chatId, "7000");
-
-        Response resp = logic.handle(chatId, "/ideas");
-
-        Assertions.assertEquals(chatId, resp.getChatId());
-        Assertions.assertTrue(resp.getText().contains("🎁 Идея 1"));
-        Assertions.assertTrue(resp.getText().contains("🎁 Идея 2"));
-        Assertions.assertTrue(resp.getText().contains("🎁 Идея 3"));
     }
 
+
+    @Test @Order(3)
+    void createform_wizard_and_save() {
+        logic.processUpdate(textUpdate(chatId, "/createform"));
+        logic.processUpdate(textUpdate(chatId, "Мама"));
+        logic.processUpdate(textUpdate(chatId, "Маме"));
+        logic.processUpdate(textUpdate(chatId, "День рождения"));
+        logic.processUpdate(textUpdate(chatId, "50"));
+        logic.processUpdate(textUpdate(chatId, "Сад, книги"));
+        Response last = logic.processUpdate(textUpdate(chatId, "4000"));
+        assertTrue(last.getText().contains("Анкета Мама сохранена"));
+        assertNotNull(repo.get(chatId, "Мама"));
+    }
+
+    @Test @Order(4)
+    void forms_list_and_open() {
+        repo.upsert(new UserForm(chatId, "Друг", "Друг", "Новый год", 25, "Спорт", 2000));
+        Response list = logic.processUpdate(textUpdate(chatId, "/forms"));
+        assertTrue(list.getText().contains("Выберите анкету"));
+        Response open = logic.processUpdate(callbackUpdate(chatId, "form:Друг"));
+        assertTrue(open.getText().contains("Анкета: Друг"));
+        assertTrue(open.getMarkup() instanceof InlineKeyboardMarkup);
+    }
+
+    @Test @Order(5)
+    void edit_field_flow() {
+        repo.upsert(new UserForm(chatId, "Брат", "Брат", "Праздник", 30, "Музыка", 4000));
+        logic.processUpdate(callbackUpdate(chatId, "editfield:Брат:hobbies"));
+        logic.processUpdate(textUpdate(chatId, "Фильмы"));
+        assertEquals("Фильмы", repo.get(chatId, "Брат").hobbies);
+    }
+
+    @Test @Order(6)
+    void delete_flow() {
+        repo.upsert(new UserForm(chatId, "Коллега", "Коллега", "Корпоратив", 35, "Чтение", 5000));
+        logic.processUpdate(callbackUpdate(chatId, "delete:Коллега"));
+        logic.processUpdate(callbackUpdate(chatId, "deleteok:Коллега"));
+        assertNull(repo.get(chatId, "Коллега"));
+    }
+
+    @Test @Order(7)
+    void idea_generation_success() throws Exception {
+        repo.upsert(new UserForm(chatId, "Мама", "Мама", "ДР", 50, "Сад", 3000));
+        injectIdeaService(logic, new StubIdeaServiceOk());
+        Response r = logic.processUpdate(callbackUpdate(chatId, "idea:Мама"));
+        assertNotNull(r);
+        assertTrue(r.getText().contains("🎁 Идея"));
+    }
+
+    @Test @Order(8)
+    void idea_generation_fail() throws Exception {
+        repo.upsert(new UserForm(chatId, "Папа", "Папа", "ДР", 60, "Авто", 6000));
+        injectIdeaService(logic, new StubIdeaServiceFail());
+        Response r = logic.processUpdate(callbackUpdate(chatId, "idea:Папа"));
+        assertNotNull(r);
+        assertTrue(r.getText().contains("Не удалось"));
+    }
+
+    @Test @Order(9)
+    void back_to_forms_callback() {
+        repo.upsert(new UserForm(chatId, "Сестра", "Сестра", "8 марта", 27, "Книги", 3000));
+        Response r = logic.processUpdate(callbackUpdate(chatId, "forms:list"));
+        assertNotNull(r);
+        assertTrue(r.getText().contains("Выберите анкету"));
+    }
+
+    @Test @Order(10)
+    void unknown_command() {
+        Response r = logic.processUpdate(textUpdate(chatId, "что-то странное"));
+        assertNotNull(r);
+        assertTrue(r.getText().toLowerCase().contains("не понимаю"));
+    }
+
+    // ---------- Репозиторий ----------
+
+    @Test @Order(11)
+    void repository_crud() {
+        FormRepository r = new FormRepository();
+        UserForm f = new UserForm(chatId, "Тест", "Тест", "Повод", 20, "Интересы", 1000);
+        r.upsert(f);
+        assertNotNull(r.get(chatId, "Тест"));
+        f.hobbies = "Новое";
+        r.upsert(f);
+        assertEquals("Новое", r.get(chatId, "Тест").hobbies);
+        r.delete(chatId, "Тест");
+        assertNull(r.get(chatId, "Тест"));
+    }
+
+    @Test @Order(12)
+    void repository_list_names() throws SQLException {
+        List<String> names = repo.listNames(chatId);
+        assertNotNull(names);
+    }
+
+    // ---------- Клавиатуры ----------
+
+    @Test @Order(13)
+    void keyboards_check_all() {
+        Keyboards kb = new Keyboards();
+        assertNotNull(kb.mainReply());
+        assertNotNull(kb.formList(List.of("Мама", "Друг")));
+        assertNotNull(kb.formActions("Мама"));
+        assertNotNull(kb.editFieldMenu("Мама"));
+        assertNotNull(kb.confirmDelete("Мама"));
+        assertNotNull(kb.backToForms());
+    }
+
+    // ---------- UserForm ----------
+
+    @Test @Order(14)
+    void userform_formatting() {
+        UserForm f = new UserForm(chatId, "Мама", "Мама", "ДР", 50, "Сад", 3000);
+        assertTrue(f.prettyBody().contains("Бюджет"));
+    }
+
+    @Test @Order(15)
+    void userform_nulls() {
+        UserForm f = new UserForm(chatId, "Друг", "Друг", null, null, null, null);
+        assertTrue(f.prettyBody().contains("Интересы"));
+    }
+
+    // ---------- TgBot ----------
+
+    @Test @Order(16)
+    void tgbot_basic_construct() {
+        TgBot bot = new TgBot("dummy");
+        assertNotNull(bot);
+    }
 }
