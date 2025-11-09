@@ -9,7 +9,7 @@ public class Response {
 
     private final long chatId;
     private final String text;
-    private final Keyboard markup; // <-- добавили
+    private final Keyboard markup;
 
     public Response(long chatId, String text) {
         this(chatId, text, null);

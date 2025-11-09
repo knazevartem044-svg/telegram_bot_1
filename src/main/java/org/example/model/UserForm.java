@@ -52,9 +52,9 @@ public class UserForm {
 
     /** Возвращает красиво оформленный текст анкеты для вывода в чат. */
     public String prettyBody() {
-        return "🎂 Повод: " + (occasion == null ? "-" : occasion) + "\n" +
-                "📅 Возраст: " + (age == null ? "-" : age) + "\n" +
-                "📚 Интересы: " + (hobbies == null ? "-" : hobbies) + "\n" +
-                "💰 Бюджет: " + (budget == null ? "-" : (budget + " ₽"));
+        return "Повод: " + (occasion == null ? "-" : occasion) + "\n" +
+                "Возраст: " + (age == null ? "-" : age) + "\n" +
+                "Интересы: " + (hobbies == null ? "-" : hobbies) + "\n" +
+                "Бюджет: " + (budget == null ? "-" : (budget + " ₽"));
     }
 }

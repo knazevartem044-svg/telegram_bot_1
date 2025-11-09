@@ -55,33 +55,33 @@ public class BotLogic {
     private Response handleText(long chatId, String text) {
 
         // Команда помощи
-        if (text.equals("/help") || text.equals("ℹ️ Помощь")) {
+        if (text.equals("/help") || text.equals("Помощь")) {
             return new Response(chatId,
-                    "📖 Команды:\n" +
-                            "📔 Создать анкету — начать новый опрос\n" +
-                            "📋 Мои анкеты — открыть список анкет\n" +
-                            "ℹ️ Помощь — показать это сообщение",
+                    "Команды:\n" +
+                            "Создать анкету — начать новый опрос\n" +
+                            "Мои анкеты — открыть список анкет\n" +
+                            "Помощь — показать это сообщение",
                     keyboards.mainReply());
         }
 
         // Команда — показать список анкет
-        if (text.equals("/forms") || text.equals("📋 Мои анкеты")) {
+        if (text.equals("/forms") || text.equals("Мои анкеты")) {
             List<String> names = forms.listNames(chatId);
             if (names.isEmpty()) {
                 return new Response(chatId,
-                        "У вас пока нет анкет. Создайте новую через 📔 Создать анкету.",
+                        "У вас пока нет анкет. Создайте новую через Создать анкету.",
                         keyboards.mainReply());
             }
             return new Response(chatId,
-                    "📋 Выберите анкету для работы:",
+                    "Выберите анкету для работы:",
                     keyboards.formList(names));
         }
 
         // Команда — создать новую анкету
-        if (text.equals("/createform") || text.equals("📔 Создать анкету")) {
+        if (text.equals("/createform") || text.equals("Создать анкету")) {
             pendingFormName.put(chatId, "__await_name__");
             sessions.put(chatId, new Session());
-            return new Response(chatId, "✏️ Введите имя новой анкеты.", keyboards.mainReply());
+            return new Response(chatId, "Введите имя новой анкеты.", keyboards.mainReply());
         }
 
         // Если бот ждёт имя анкеты
@@ -138,7 +138,7 @@ public class BotLogic {
         }
         forms.upsert(f);
         return new Response(chatId,
-                "✅ Обновлено!\n" + f.prettyCardTitle() + "\n" + f.prettyBody(),
+                "Обновлено!\n" + f.prettyCardTitle() + "\n" + f.prettyBody(),
                 keyboards.formActions(f.name));
     }
 
@@ -156,7 +156,7 @@ public class BotLogic {
         if (data.startsWith("edit:")) {
             String name = data.substring(5);
             return new Response(chatId,
-                    "✏️ Что хотите изменить в анкете " + name + "?",
+                    "Что хотите изменить в анкете " + name + "?",
                     keyboards.editFieldMenu(name));
         }
 
@@ -172,7 +172,7 @@ public class BotLogic {
         if (data.startsWith("delete:")) {
             String name = data.substring(7);
             return new Response(chatId,
-                    "⚠️ Удалить анкету " + name + "?",
+                    "Удалить анкету " + name + "?",
                     keyboards.confirmDelete(name));
         }
 
@@ -180,7 +180,7 @@ public class BotLogic {
             String name = data.substring(9);
             forms.delete(chatId, name);
             return new Response(chatId,
-                    "🗑 Анкета " + name + " удалена.",
+                    "Анкета " + name + " удалена.",
                     keyboards.mainReply());
         }
 
@@ -192,7 +192,7 @@ public class BotLogic {
             List<String> names = forms.listNames(chatId);
             if (names.isEmpty())
                 return new Response(chatId, "У вас пока нет анкет.", keyboards.mainReply());
-            return new Response(chatId, "📋 Выберите анкету:", keyboards.formList(names));
+            return new Response(chatId, "Выберите анкету:", keyboards.formList(names));
         }
 
         return null;
@@ -206,7 +206,7 @@ public class BotLogic {
         if (f == null)
             return new Response(chatId, "Анкета не найдена.");
         return new Response(chatId,
-                "👤 " + f.prettyCardTitle() + "\n" + f.prettyBody(),
+                 f.prettyCardTitle() + "\n" + f.prettyBody(),
                 keyboards.formActions(name));
     }
 
@@ -222,10 +222,10 @@ public class BotLogic {
         try {
             ideas = ideaService.fetchGiftIdeas(prompt);
         } catch (Exception e) {
-            ideas = "❌ Не удалось получить идею. Попробуйте позже.";
+            ideas = "Не удалось получить идею. Попробуйте позже.";
         }
         return new Response(chatId,
-                "🎁 Идея подарка для " + name + ":\n" + ideas,
+                "Идея подарка для " + name + ":\n" + ideas,
                 keyboards.backToForms());
     }
 
@@ -270,7 +270,7 @@ public class BotLogic {
                     forms.upsert(new UserForm(chatId, fname, s.getWho(), s.getReason(), s.getAge(), s.getHobbies(), s.getBudget()));
                 sessions.remove(chatId);
                 return new Response(chatId,
-                        "✅ Анкета " + fname + " сохранена!\nИспользуйте /forms для просмотра.",
+                        "Анкета " + fname + " сохранена!\nИспользуйте /forms для просмотра.",
                         keyboards.mainReply());
             }
         }

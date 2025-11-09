@@ -15,7 +15,7 @@ public class Keyboards {
     /** Создаёт основную клавиатуру внизу экрана с командами бота. */
     public ReplyKeyboardMarkup mainReply() {
         return new ReplyKeyboardMarkup(
-                new String[]{"ℹ️ Помощь", "📋 Мои анкеты", "📔 Создать анкету"}
+                new String[]{"Помощь", "Мои анкеты", "Создать анкету"}
         )
                 .resizeKeyboard(true)
                 .selective(true);
@@ -39,9 +39,9 @@ public class Keyboards {
      */
     public InlineKeyboardMarkup formActions(String name) {
         return new InlineKeyboardMarkup(
-                new InlineKeyboardButton("✏️ Отредактировать").callbackData("edit:" + name),
-                new InlineKeyboardButton("🗑 Удалить").callbackData("delete:" + name),
-                new InlineKeyboardButton("🎁 Сгенерировать идею").callbackData("idea:" + name)
+                new InlineKeyboardButton("Отредактировать").callbackData("edit:" + name),
+                new InlineKeyboardButton("Удалить").callbackData("delete:" + name),
+                new InlineKeyboardButton("Сгенерировать идею").callbackData("idea:" + name)
         );
     }
 
@@ -51,11 +51,11 @@ public class Keyboards {
      */
     public InlineKeyboardMarkup editFieldMenu(String name) {
         return new InlineKeyboardMarkup(
-                new InlineKeyboardButton("🎂 Повод").callbackData("editfield:" + name + ":occasion"),
-                new InlineKeyboardButton("📅 Возраст").callbackData("editfield:" + name + ":age"),
-                new InlineKeyboardButton("📚 Интересы").callbackData("editfield:" + name + ":hobbies"),
-                new InlineKeyboardButton("💰 Бюджет").callbackData("editfield:" + name + ":budget")
-        ).addRow(new InlineKeyboardButton("⬅ Назад").callbackData("form:" + name));
+                new InlineKeyboardButton("Повод").callbackData("editfield:" + name + ":occasion"),
+                new InlineKeyboardButton("Возраст").callbackData("editfield:" + name + ":age"),
+                new InlineKeyboardButton("Интересы").callbackData("editfield:" + name + ":hobbies"),
+                new InlineKeyboardButton("Бюджет").callbackData("editfield:" + name + ":budget")
+        ).addRow(new InlineKeyboardButton("Назад").callbackData("form:" + name));
     }
 
     /**
@@ -64,8 +64,8 @@ public class Keyboards {
      */
     public InlineKeyboardMarkup confirmDelete(String name) {
         return new InlineKeyboardMarkup(
-                new InlineKeyboardButton("✅ Да, удалить").callbackData("deleteok:" + name),
-                new InlineKeyboardButton("❌ Отмена").callbackData("form:" + name)
+                new InlineKeyboardButton("Да, удалить").callbackData("deleteok:" + name),
+                new InlineKeyboardButton("Отмена").callbackData("form:" + name)
         );
     }
 
@@ -75,7 +75,7 @@ public class Keyboards {
      */
     public InlineKeyboardMarkup backToForms() {
         return new InlineKeyboardMarkup(
-                new InlineKeyboardButton("⬅ К анкетам").callbackData("forms:list")
+                new InlineKeyboardButton("К анкетам").callbackData("forms:list")
         );
     }
 }

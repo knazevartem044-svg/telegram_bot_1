@@ -47,7 +47,7 @@ public class GiftIdeaService implements GiftIdeaGenerator {
 
     /** Системное сообщение, задающее роль нейросети. */
     private static final String SYSTEM_PROMPT =
-            "Ты помощник, предлагающий креативные идеи подарков. Форматируй красиво и с эмодзи 🎁.";
+            "Ты помощник, предлагающий креативные идеи подарков. Форматируй красиво и с эмодзи.";
 
     /** HTTP-клиент для выполнения запросов. */
     private static final OkHttpClient client = new OkHttpClient();
@@ -63,9 +63,9 @@ public class GiftIdeaService implements GiftIdeaGenerator {
         this.apiKey = dotenv.get("OPENROUTER_API_KEY");
 
         if (apiKey == null || apiKey.isBlank()) {
-            log.error("❌ Не найден ключ API OpenRouter. Убедитесь, что он указан в файле .env");
+            log.error("Не найден ключ API OpenRouter. Убедитесь, что он указан в файле .env");
         } else {
-            log.info("✅ GiftIdeaService инициализирован. API-ключ успешно загружен.");
+            log.info("GiftIdeaService инициализирован. API-ключ успешно загружен.");
         }
     }
 
@@ -75,7 +75,7 @@ public class GiftIdeaService implements GiftIdeaGenerator {
      */
     @Override
     public String fetchGiftIdeas(String prompt) throws IOException {
-        log.info("📨 Отправка запроса к OpenRouter ({} символов)...", prompt.length());
+        log.info("Отправка запроса к OpenRouter ({} символов)...", prompt.length());
 
         JSONObject json = new JSONObject()
                 .put("model", MODEL)
@@ -103,7 +103,7 @@ public class GiftIdeaService implements GiftIdeaGenerator {
 
         try (okhttp3.Response response = client.newCall(request).execute()) {
             if (!response.isSuccessful()) {
-                log.error("⚠️ Ошибка от OpenRouter: код {}", response.code());
+                log.error("Ошибка от OpenRouter: код {}", response.code());
                 throw new IOException("Ошибка от OpenRouter: " + response.code());
             }
 
@@ -116,11 +116,11 @@ public class GiftIdeaService implements GiftIdeaGenerator {
                     .getString("content")
                     .trim();
 
-            log.info("🎁 Успешно получен ответ от OpenRouter ({} символов)", content.length());
+            log.info("Успешно получен ответ от OpenRouter ({} символов)", content.length());
             return content;
 
         } catch (IOException e) {
-            log.error("❌ Ошибка при соединении с OpenRouter API", e);
+            log.error("Ошибка при соединении с OpenRouter API", e);
             throw e;
         }
     }
