@@ -6,38 +6,40 @@ import java.sql.*;
 import java.util.List;
 
 /**
- Тесты для класса FormRepository, который управляет анкетами пользователей в SQLite.
-
- Проверяются основные операции:
- - добавление и обновление анкет (upsert);
- - получение анкеты (get);
- - получение списка имён (listNames);
- - удаление анкеты (delete).
-
- Перед каждым тестом таблица forms очищается,
- чтобы гарантировать чистую базу данных и независимость тестов.
+ * Тесты для класса FormRepository.
+ * Теперь они используют отдельную тестовую базу forms_test.db,
+ * чтобы не трогать реальные данные пользователей.
  */
 class FormRepositoryTest {
 
     FormRepository repo;
 
-    /**
-     Подготавливает тестовую среду перед каждым тестом.
-     Создаёт экземпляр FormRepository и очищает таблицу forms.
-     */
     @BeforeEach
     void setUp() throws SQLException {
-        repo = new FormRepository();
+        repo = new FormRepository("forms_test.db");
 
-        try (Connection c = DriverManager.getConnection("jdbc:sqlite:forms.db");
+        try (Connection c = DriverManager.getConnection("jdbc:sqlite:forms_test.db");
              Statement st = c.createStatement()) {
+
+            // Создаем таблицу, если её нет
+            st.execute("""
+                CREATE TABLE IF NOT EXISTS forms(
+                    chat_id   INTEGER NOT NULL,
+                    name      TEXT    NOT NULL,
+                    relation  TEXT,
+                    occasion  TEXT,
+                    age       INTEGER,
+                    hobbies   TEXT,
+                    budget    INTEGER,
+                    PRIMARY KEY(chat_id, name)
+                )
+            """);
+
+            // Очищаем только тестовую базу
             st.execute("DELETE FROM forms");
         }
     }
 
-    /**
-     Проверяет, что метод upsert() корректно сохраняет новую анкету.
-     */
     @Test
     void shouldInsertNewForm() {
         UserForm f = new UserForm(1L, "Мама", "мама", "ДР", 45, "сад", 3000);
@@ -49,9 +51,6 @@ class FormRepositoryTest {
         Assertions.assertEquals(3000, loaded.budget);
     }
 
-    /**
-     Проверяет, что повторный вызов upsert() обновляет существующую анкету.
-     */
     @Test
     void shouldUpdateExistingForm() {
         UserForm f1 = new UserForm(1L, "Брат", "брат", "НГ", 25, "спорт", 5000);
@@ -66,18 +65,12 @@ class FormRepositoryTest {
         Assertions.assertEquals(7000, updated.budget);
     }
 
-    /**
-     Проверяет, что метод get() возвращает null, если анкета отсутствует.
-     */
     @Test
     void shouldReturnNullIfFormNotFound() {
         UserForm result = repo.get(99L, "Несуществующая");
         Assertions.assertNull(result);
     }
 
-    /**
-     Проверяет, что метод listNames() возвращает правильный список имён анкет.
-     */
     @Test
     void shouldListAllNamesForUser() {
         repo.upsert(new UserForm(1L, "Мама", "мама", "ДР", 40, "сад", 2000));
@@ -89,9 +82,6 @@ class FormRepositoryTest {
         Assertions.assertTrue(names.contains("Папа"));
     }
 
-    /**
-     Проверяет, что метод delete() корректно удаляет анкету из базы.
-     */
     @Test
     void shouldDeleteForm() {
         repo.upsert(new UserForm(1L, "Мама", "мама", "ДР", 40, "сад", 2000));
@@ -101,9 +91,6 @@ class FormRepositoryTest {
         Assertions.assertNull(result);
     }
 
-    /**
-     Проверяет, что удаление несуществующей анкеты не вызывает ошибок.
-     */
     @Test
     void shouldNotThrowWhenDeletingNonexistentForm() {
         Assertions.assertDoesNotThrow(() -> repo.delete(1L, "Несуществующая"));

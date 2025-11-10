@@ -84,11 +84,11 @@ class DatabaseTest {
     }
 
     /**
-     Проверяет, что повторное создание экземпляра Database
-     не вызывает исключений при повторном вызове CREATE TABLE IF NOT EXISTS.
+     * Проверяет, что повторное создание экземпляра Database
+     * не вызывает исключений (например, при повторном CREATE TABLE IF NOT EXISTS).
      */
     @Test
     void shouldNotThrowOnRepeatedInitialization() {
-        Assertions.assertDoesNotThrow(Database::new);
+        Assertions.assertDoesNotThrow(() -> new Database());
     }
 }

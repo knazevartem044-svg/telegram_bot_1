@@ -15,9 +15,14 @@ public class FormRepository {
     /** Объект для подключения к базе данных */
     private final Database database;
 
-    /** Конструктор инициализирует подключение к БД */
+    /** Конструктор для продакшн-кода */
     public FormRepository() {
         this.database = new Database();
+    }
+
+    /** Конструктор для тестов — позволяет использовать отдельную базу */
+    public FormRepository(String dbPath) {
+        this.database = new Database("jdbc:sqlite:" + dbPath);
     }
 
     /**
@@ -49,10 +54,7 @@ public class FormRepository {
         }
     }
 
-    /**
-     * Возвращает анкету по имени и ID пользователя.
-     * Если анкета не найдена, возвращает null.
-     */
+    /** Возвращает анкету по имени и ID пользователя. */
     public UserForm get(long chatId, String name) {
         String sql = "SELECT * FROM forms WHERE chat_id = ? AND name = ?";
         try (Connection c = database.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
@@ -76,10 +78,7 @@ public class FormRepository {
         return null;
     }
 
-    /**
-     * Возвращает список всех имён анкет пользователя.
-     * Используется для вывода кнопок выбора анкеты.
-     */
+    /** Возвращает список всех имён анкет пользователя. */
     public List<String> listNames(long chatId) {
         List<String> result = new ArrayList<>();
         String sql = "SELECT name FROM forms WHERE chat_id = ?";
@@ -95,10 +94,7 @@ public class FormRepository {
         return result;
     }
 
-    /**
-     * Удаляет анкету пользователя по имени.
-     * Используется при нажатии кнопки Удалить.
-     */
+    /** Удаляет анкету пользователя по имени. */
     public void delete(long chatId, String name) {
         String sql = "DELETE FROM forms WHERE chat_id = ? AND name = ?";
         try (Connection c = database.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
