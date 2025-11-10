@@ -1,7 +1,5 @@
 package org.example;
 
-import com.pengrad.telegrambot.model.CallbackQuery;
-import com.pengrad.telegrambot.model.Update;
 import org.example.db.FormRepository;
 import org.example.model.UserForm;
 import java.util.HashMap;
@@ -39,13 +37,11 @@ public class BotLogic {
     /**
      * Получает обновления от Telegram и вызывает нужный метод.
      */
-    public Response processUpdate(Update upd) {
-        if (upd.callbackQuery() != null) {
-            return handleCallback(upd.callbackQuery());
-        }
-        if (upd.message() != null && upd.message().text() != null) {
-            return handleText(upd.message().chat().id(), upd.message().text().trim());
-        }
+    public Response process(long chatId, String text, String callbackData) {
+        if (callbackData != null)
+            return handleCallback(chatId, callbackData);
+        if (text != null)
+            return handleText(chatId, text.trim());
         return null;
     }
 
@@ -56,12 +52,13 @@ public class BotLogic {
 
         // Команда помощи
         if (text.equals("/help") || text.equals("Помощь")) {
-            return new Response(chatId,
-                    "Команды:\n" +
-                            "Создать анкету — начать новый опрос\n" +
-                            "Мои анкеты — открыть список анкет\n" +
-                            "Помощь — показать это сообщение",
-                    keyboards.mainReply());
+            return new Response(chatId, """
+        Команды:
+        Создать анкету — начать новый опрос
+        Мои анкеты — открыть список анкет
+        Помощь — показать это сообщение
+        """, keyboards.mainReply());
+
         }
 
         // Команда — показать список анкет
@@ -145,9 +142,7 @@ public class BotLogic {
     /**
      * Обрабатывает все нажатия inline-кнопок.
      */
-    private Response handleCallback(CallbackQuery cb) {
-        long chatId = cb.message().chat().id();
-        String data = cb.data();
+    private Response handleCallback(long chatId, String data) {
 
         if (data.startsWith("form:")) {
             return openForm(chatId, data.substring(5));
@@ -197,6 +192,7 @@ public class BotLogic {
 
         return null;
     }
+
 
     /**
      * Открывает выбранную анкету и показывает её содержимое.
