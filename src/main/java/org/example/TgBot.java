@@ -1,62 +1,55 @@
-
 package org.example;
 
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.UpdatesListener;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.request.SendMessage;
+import org.example.telegram.TelegramAdapter;
 
 import java.util.List;
-import java.util.Locale;
 
 /**
- * Класс для взаимодействия с tg api.
- * Обрабатывает входящие сообщения, передавая их в logic, и отправляет ответы пользователю.
+ * Класс TgBot отвечает только за связь между Telegram и логикой.
+ * Он не содержит бизнес-логики — только получение и отправку сообщений.
  */
 public class TgBot {
 
-    /** Экземпляр tg bota, используемый для получения обновлений и отправки сообщений. */
+    /** Telegram API клиент */
     private final TelegramBot bot;
 
-    /** Логика диалога для подбора подарков. */
-    private final BotLogic giftFlow;
+    /** Адаптер, который преобразует Telegram-обновления в универсальный формат */
+    private final TelegramAdapter adapter = new TelegramAdapter();
 
     /**
-     * Создаёт экземпляр tg bota.
+     * Конструктор TgBot.
+     * Принимает токен Telegram-бота и создаёт объект для работы с API.
      */
     public TgBot(String token) {
         this.bot = new TelegramBot(token);
-        this.giftFlow = new BotLogic();
     }
 
     /**
-     * Запускает бота.
+     * Запускает бота и слушает обновления.
      */
     public void start() {
-        bot.setUpdatesListener(this::onUpdates);
-        System.out.println("Бот запущен!");
+        bot.setUpdatesListener(this::onUpdates, Throwable::printStackTrace);
+        System.out.println("🤖 Bot started...");
     }
 
     /**
-     * Обрабатывает входящие обновления tg.
-     * Проверяет наличие текста, передаёт его в logic и отправляет ответ пользователю.
+     * Обрабатывает входящие обновления Telegram.
+     * Делегирует обработку в BotLogic через TelegramAdapter.
      */
     private int onUpdates(List<Update> updates) {
-        for (Update u : updates) {
-            if (u.message() == null || u.message().text() == null) continue;
-
-            long chatId = u.message().chat().id();
-            String userText = u.message().text();
-            String lower = userText.trim().toLowerCase(Locale.ROOT);
-
-            Response resp;
-
-            resp = giftFlow.handle(chatId, userText);
-
+        for (Update upd : updates) {
+            Response resp = adapter.process(upd);
             if (resp == null) continue;
 
-            SendMessage out = new SendMessage(resp.getChatId(), resp.getText());
-            bot.execute(out);
+            SendMessage msg = new SendMessage(resp.getChatId(), resp.getText());
+            if (resp.getMarkup() != null)
+                msg.replyMarkup(resp.getMarkup());
+
+            bot.execute(msg);
         }
         return UpdatesListener.CONFIRMED_UPDATES_ALL;
     }
