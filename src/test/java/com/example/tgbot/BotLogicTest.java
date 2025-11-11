@@ -11,31 +11,27 @@ import org.mockito.Mockito;
 import java.util.List;
 
 /**
- Тестовый класс, проверяющий поведение основного класса логики BotLogic.
-
- Содержит юнит-тесты для всех сценариев:
- - обработка текстовых команд,
- - inline-кнопок (callback data),
- - пошаговое создание анкеты (опрос),
- - редактирование существующих анкет,
- - генерация идей подарков через AI-сервис.
-
- Для изоляции логики используются моки зависимостей:
- FormRepository, GiftIdeaService, Keyboards.
+ * Тестовый класс, проверяющий работу основного класса логики BotLogic.
+ * Содержит юнит-тесты для команд, кнопок, опросов, редактирования анкет
+ * и генерации идей подарков через нейросеть.
  */
 class BotLogicTest {
 
+    /** Основной объект логики бота, который тестируется. */
     BotLogic logic;
+
+    /** Поддельный репозиторий анкет для изоляции от базы данных. */
     FormRepository mockRepo;
+
+    /** Поддельный сервис идей подарков для изоляции от внешнего API. */
     GiftIdeaService mockIdeas;
+
+    /** Поддельный генератор клавиатур Telegram для тестов. */
     Keyboards mockKb;
 
     /**
-     Подготавливает тестовую среду перед каждым тестом.
-
-     Создаются моки зависимостей и подменяются поля в BotLogic
-     через reflection, чтобы тестировать изолированную логику
-     без реальной БД и внешних API.
+     * Подготавливает тестовую среду перед каждым тестом.
+     * Создаёт моки зависимостей и подменяет поля в классе BotLogic через reflection.
      */
     @BeforeEach
     void init() {
@@ -68,7 +64,7 @@ class BotLogicTest {
     // Команды
     // ========================
 
-    /** Проверяет, что команда "Помощь" выводит список доступных команд. */
+    /** Проверяет, что команда «Помощь» выводит список доступных команд. */
     @Test
     void shouldReturnHelpText() {
         Response r = logic.process(1L, "Помощь", null);
@@ -83,7 +79,7 @@ class BotLogicTest {
         Assertions.assertTrue(r.getText().contains("У вас пока нет анкет"));
     }
 
-    /** Проверяет, что бот выводит список анкет, если они есть. */
+    /** Проверяет, что бот корректно показывает список анкет пользователя. */
     @Test
     void shouldShowFormList() {
         Mockito.when(mockRepo.listNames(1L)).thenReturn(List.of("Мама", "Брат"));
@@ -91,7 +87,7 @@ class BotLogicTest {
         Assertions.assertTrue(r.getText().contains("Выберите анкету"));
     }
 
-    /** Проверяет начало создания новой анкеты. */
+    /** Проверяет начало создания новой анкеты через команду. */
     @Test
     void shouldStartFormCreation() {
         Response r = logic.process(1L, "Создать анкету", null);
@@ -109,7 +105,7 @@ class BotLogicTest {
     // Callback (inline кнопки)
     // ========================
 
-    /** Проверяет открытие анкеты при выборе через inline-кнопку. */
+    /** Проверяет открытие анкеты при выборе её через inline-кнопку. */
     @Test
     void shouldHandleFormCallback() {
         UserForm f = new UserForm(1L, "Мама", "мама", "ДР", 40, "сад", 3000);
@@ -125,14 +121,14 @@ class BotLogicTest {
         Assertions.assertTrue(r.getText().contains("Что хотите изменить"));
     }
 
-    /** Проверяет, что бот запрашивает подтверждение удаления анкеты. */
+    /** Проверяет запрос подтверждения удаления анкеты. */
     @Test
     void shouldHandleDeleteConfirmation() {
         Response r = logic.process(1L, null, "delete:Мама");
         Assertions.assertTrue(r.getText().contains("Удалить анкету"));
     }
 
-    /** Проверяет, что после подтверждения анкета удаляется. */
+    /** Проверяет удаление анкеты после подтверждения. */
     @Test
     void shouldHandleDeleteOk() {
         Response r = logic.process(1L, null, "deleteok:Мама");
@@ -140,7 +136,7 @@ class BotLogicTest {
         Assertions.assertTrue(r.getText().contains("удалена"));
     }
 
-    /** Проверяет реакцию на callback с пустым списком анкет. */
+    /** Проверяет реакцию на callback, если у пользователя нет анкет. */
     @Test
     void shouldHandleFormsListCallback() {
         Mockito.when(mockRepo.listNames(1L)).thenReturn(List.of());
@@ -163,7 +159,7 @@ class BotLogicTest {
         Assertions.assertTrue(r.getText().contains("Идея подарка"));
     }
 
-    /** Проверяет обработку ошибки при генерации идеи подарка. */
+    /** Проверяет корректную обработку ошибки при генерации идеи подарка. */
     @Test
     void shouldHandleIdeaGenerationError() throws Exception {
         UserForm f = new UserForm(1L, "Мама", "мама", "ДР", 40, "сад", 3000);
@@ -200,7 +196,7 @@ class BotLogicTest {
         Assertions.assertTrue(r5.getText().contains("Анкета Мама сохранена"));
     }
 
-    /** Проверяет отклонение некорректного возраста при опросе. */
+    /** Проверяет отклонение некорректного возраста во время опроса. */
     @Test
     void shouldRejectInvalidAgeDuringSurvey() {
         logic.process(1L, "Создать анкету", null);
@@ -212,7 +208,7 @@ class BotLogicTest {
         Assertions.assertTrue(r.getText().contains("Введите число"));
     }
 
-    /** Проверяет отклонение некорректного бюджета при опросе. */
+    /** Проверяет отклонение некорректного бюджета во время опроса. */
     @Test
     void shouldRejectInvalidBudgetDuringSurvey() {
         logic.process(1L, "Создать анкету", null);
@@ -227,10 +223,10 @@ class BotLogicTest {
     }
 
     // ========================
-    // Редактирование анкеты
+    // Редактирование анкет
     // ========================
 
-    /** Проверяет успешное изменение возраста и сохранение анкеты. */
+    /** Проверяет успешное изменение возраста анкеты и её сохранение. */
     @Test
     void shouldEditAgeFieldCorrectly() {
         UserForm f = new UserForm(1L, "Мама", "мама", "ДР", 40, "сад", 3000);
@@ -243,7 +239,7 @@ class BotLogicTest {
         Mockito.verify(mockRepo).upsert(Mockito.any(UserForm.class));
     }
 
-    /** Проверяет ошибку при вводе некорректного возраста при редактировании. */
+    /** Проверяет отклонение некорректного возраста при редактировании анкеты. */
     @Test
     void shouldRejectInvalidAgeDuringEdit() {
         UserForm f = new UserForm(1L, "Мама", "мама", "ДР", 40, "сад", 3000);
@@ -255,7 +251,7 @@ class BotLogicTest {
         Assertions.assertTrue(r.getText().contains("Возраст должен быть числом"));
     }
 
-    /** Проверяет ошибку при вводе некорректного бюджета при редактировании. */
+    /** Проверяет отклонение некорректного бюджета при редактировании анкеты. */
     @Test
     void shouldRejectInvalidBudgetDuringEdit() {
         UserForm f = new UserForm(1L, "Мама", "мама", "ДР", 40, "сад", 3000);
