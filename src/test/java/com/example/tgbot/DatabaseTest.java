@@ -4,35 +4,24 @@ import org.junit.jupiter.api.*;
 import java.sql.*;
 
 /**
- Тесты для класса Database, который управляет подключением к SQLite
- и создаёт таблицу forms при инициализации.
-
- Тесты проверяют:
- - успешное установление соединения;
- - создание таблицы forms;
- - корректность структуры таблицы;
- - стабильность при повторной инициализации базы.
+ Тесты для проверки работы класса Database.
+ Проверяются подключение, создание таблицы и её структура.
  */
 class DatabaseTest {
 
+    /**
+     Объект базы данных, используемый в тестах.
+     Для безопасности создаётся отдельная тестовая база test.db.
+     */
     Database db;
 
-    /**
-     Перед каждым тестом создаётся новый экземпляр Database.
-
-     Это вызывает автоматическую проверку существования таблицы forms
-     и её создание при необходимости.
-     */
+    /** Перед каждым тестом создаётся новая база данных */
     @BeforeEach
     void setUp() {
-        db = new Database();
+        db = new Database("jdbc:sqlite:test.db");
     }
 
-    /**
-     Проверяет, что метод getConnection() возвращает действующее подключение.
-
-     Убедиться, что объект соединения не равен null и находится в открытом состоянии.
-     */
+    /** Проверяет, что подключение к базе устанавливается успешно */
     @Test
     void shouldReturnValidConnection() throws SQLException {
         try (Connection conn = db.getConnection()) {
@@ -41,11 +30,7 @@ class DatabaseTest {
         }
     }
 
-    /**
-     Проверяет, что при создании экземпляра Database таблица forms создаётся автоматически.
-
-     Используется метаданные базы данных для поиска таблицы с именем "forms".
-     */
+    /** Проверяет, что таблица forms существует после инициализации */
     @Test
     void shouldCreateFormsTableIfNotExists() throws SQLException {
         try (Connection conn = db.getConnection()) {
@@ -56,12 +41,7 @@ class DatabaseTest {
         }
     }
 
-    /**
-     Проверяет наличие всех ожидаемых столбцов в таблице forms.
-
-     Сравниваются имена колонок, полученные из метаданных, с ожидаемыми:
-     chat_id, name, relation, occasion, age, hobbies, budget.
-     */
+    /** Проверяет, что таблица forms содержит все ожидаемые столбцы */
     @Test
     void shouldHaveExpectedColumnsInFormsTable() throws SQLException {
         try (Connection conn = db.getConnection();
@@ -72,23 +52,20 @@ class DatabaseTest {
                 columns.append(rs.getString("COLUMN_NAME")).append(",");
             }
 
-            String colNames = columns.toString();
-            Assertions.assertTrue(colNames.contains("chat_id"));
-            Assertions.assertTrue(colNames.contains("name"));
-            Assertions.assertTrue(colNames.contains("relation"));
-            Assertions.assertTrue(colNames.contains("occasion"));
-            Assertions.assertTrue(colNames.contains("age"));
-            Assertions.assertTrue(colNames.contains("hobbies"));
-            Assertions.assertTrue(colNames.contains("budget"));
+            String names = columns.toString();
+            Assertions.assertTrue(names.contains("chat_id"));
+            Assertions.assertTrue(names.contains("name"));
+            Assertions.assertTrue(names.contains("relation"));
+            Assertions.assertTrue(names.contains("occasion"));
+            Assertions.assertTrue(names.contains("age"));
+            Assertions.assertTrue(names.contains("hobbies"));
+            Assertions.assertTrue(names.contains("budget"));
         }
     }
 
-    /**
-     * Проверяет, что повторное создание экземпляра Database
-     * не вызывает исключений (например, при повторном CREATE TABLE IF NOT EXISTS).
-     */
+    /** Проверяет, что повторная инициализация не вызывает ошибок */
     @Test
     void shouldNotThrowOnRepeatedInitialization() {
-        Assertions.assertDoesNotThrow(() -> new Database());
+        Assertions.assertDoesNotThrow(() -> new Database("jdbc:sqlite:test.db"));
     }
 }
