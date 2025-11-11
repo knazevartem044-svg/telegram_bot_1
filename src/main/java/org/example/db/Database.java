@@ -3,27 +3,55 @@ package org.example.db;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 /**
- * Класс Database управляет подключением к SQLite.
- * Поддерживает передачу пути к базе данных для тестов.
+ Класс Database управляет подключением к SQLite.
+ При первом подключении создаёт таблицу forms, если её ещё нет.
  */
-public class Database {
+class Database {
+    /**
+     Адрес подключения к базе данных SQLite.
+     Например: "jdbc:sqlite:forms.db" или "jdbc:sqlite:test.db".
+     */
+    String url;
 
-    private final String url;
-
-    /** Конструктор по умолчанию — подключение к основной базе */
-    public Database() {
-        this.url = "jdbc:sqlite:forms.db";
+    /** Создаёт подключение к основной базе данных */
+    Database() {
+        this("jdbc:sqlite:forms.db");
     }
 
-    /** Конструктор для тестов — можно указать собственную базу */
-    public Database(String url) {
+    /** Позволяет указать собственный путь к базе (например, для тестов) */
+    Database(String url) {
         this.url = url;
+        initialize();
     }
 
     /** Возвращает подключение к базе данных */
-    public Connection getConnection() throws SQLException {
+    Connection getConnection() throws SQLException {
         return DriverManager.getConnection(url);
+    }
+
+    /** Создаёт таблицу forms, если она отсутствует */
+    void initialize() {
+        String sql = """
+            CREATE TABLE IF NOT EXISTS forms (
+                        chat_id   INTEGER NOT NULL,
+                        name      TEXT NOT NULL,
+                        relation  TEXT,
+                        occasion  TEXT,
+                        age       INTEGER,
+                        hobbies   TEXT,
+                        budget    INTEGER,
+                        PRIMARY KEY(chat_id, name)
+                    );
+        """;
+
+        try (Connection conn = getConnection();
+             Statement stmt = conn.createStatement()) {
+            stmt.execute(sql);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 }
