@@ -2,26 +2,19 @@ package org.example;
 
 import okhttp3.*;
 import org.json.JSONObject;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.Test;
+
 import java.io.IOException;
-import static org.mockito.Mockito.*;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
- Тесты для класса GiftIdeaService, обращающегося к OpenRouter API.
-
- Проверяются:
- - успешная обработка корректного JSON-ответа;
- - выбрасывание IOException при неуспешном коде ответа;
- - выбрасывание IOException при сетевой ошибке.
+ * Тесты для класса GiftIdeaService (или, точнее, его поведения при разборе JSON и ошибках).
  */
 class GiftIdeaServiceTest {
 
-    /**
-     Проверяет, что метод fetchGiftIdeas() корректно парсит успешный ответ OpenRouter.
-     */
     @Test
     void shouldReturnParsedGiftIdeaOnSuccess() throws Exception {
-        // создаём фиктивное тело JSON
         String fakeJson = new JSONObject()
                 .put("choices", new org.json.JSONArray()
                         .put(new JSONObject()
@@ -29,26 +22,17 @@ class GiftIdeaServiceTest {
                                         .put("content", "🎁 Подарок маме"))))
                 .toString();
 
-        // мок HTTP вызова
-        Call mockCall = mock(Call.class);
-        OkHttpClient mockClient = mock(OkHttpClient.class);
-        ResponseBody body = ResponseBody.create(fakeJson, MediaType.get("application/json"));
-        okhttp3.Response response = new okhttp3.Response.Builder()
-                .code(200)
-                .message("OK")
-                .protocol(Protocol.HTTP_1_1)
-                .request(new Request.Builder().url("http://localhost").build())
-                .body(body)
-                .build();
-
-        when(mockClient.newCall(any())).thenReturn(mockCall);
-        when(mockCall.execute()).thenReturn(response);
-
-        // создаём подкласс с подменой клиента
         GiftIdeaService service = new GiftIdeaService() {
             @Override
             public String fetchGiftIdeas(String prompt) throws IOException {
-                try (okhttp3.Response r = response) {
+                try (okhttp3.Response r = new okhttp3.Response.Builder()
+                        .code(200)
+                        .message("OK")
+                        .protocol(Protocol.HTTP_1_1)
+                        .request(new Request.Builder().url("http://localhost").build())
+                        .body(ResponseBody.create(fakeJson, MediaType.get("application/json")))
+                        .build()) {
+
                     String bodyString = r.body().string();
                     JSONObject jsonResp = new JSONObject(bodyString);
                     return jsonResp.getJSONArray("choices")
@@ -61,12 +45,10 @@ class GiftIdeaServiceTest {
         };
 
         String result = service.fetchGiftIdeas("подарок для мамы");
-        Assertions.assertTrue(result.contains("Подарок"));
+
+        assertEquals("🎁 Подарок маме", result);
     }
 
-    /**
-     Проверяет, что выбрасывается IOException при ответе с ошибочным кодом.
-     */
     @Test
     void shouldThrowIOExceptionOnErrorCode() {
         GiftIdeaService service = new GiftIdeaService() {
@@ -76,13 +58,12 @@ class GiftIdeaServiceTest {
             }
         };
 
-        Assertions.assertThrows(IOException.class, () ->
-                service.fetchGiftIdeas("подарок для брата"));
+        IOException ex = assertThrows(IOException.class,
+                () -> service.fetchGiftIdeas("подарок для брата"));
+
+        assertTrue(ex.getMessage().contains("Ошибка от OpenRouter"));
     }
 
-    /**
-     Проверяет, что выбрасывается IOException при сетевой ошибке (например, таймауте).
-     */
     @Test
     void shouldThrowIOExceptionOnNetworkFailure() {
         GiftIdeaService service = new GiftIdeaService() {
@@ -92,7 +73,9 @@ class GiftIdeaServiceTest {
             }
         };
 
-        Assertions.assertThrows(IOException.class, () ->
-                service.fetchGiftIdeas("подарок для коллеги"));
+        IOException ex = assertThrows(IOException.class,
+                () -> service.fetchGiftIdeas("подарок для коллеги"));
+
+        assertTrue(ex.getMessage().contains("Сетевая ошибка"));
     }
 }
