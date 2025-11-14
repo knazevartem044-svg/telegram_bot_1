@@ -6,14 +6,18 @@ import org.example.Keyboards;
 import org.example.Response;
 import org.example.db.FormRepository;
 import org.example.model.UserForm;
-import org.junit.jupiter.api.*;
-import org.mockito.Mockito;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import java.util.List;
 
 /**
  * Тестовый класс, проверяющий работу основного класса логики BotLogic.
- * Содержит юнит-тесты для команд, кнопок, опросов, редактирования анкет
- * и генерации идей подарков через нейросеть.
+ * Покрывает команды, callback-и, опрос, редактирование анкет
+ * и генерацию идей подарков.
  */
 class BotLogicTest {
 
@@ -29,15 +33,11 @@ class BotLogicTest {
     /** Поддельный генератор клавиатур Telegram для тестов. */
     Keyboards mockKb;
 
-    /**
-     * Подготавливает тестовую среду перед каждым тестом.
-     * Создаёт моки зависимостей и подменяет поля в классе BotLogic через reflection.
-     */
     @BeforeEach
     void init() {
-        mockRepo = Mockito.mock(FormRepository.class);
-        mockIdeas = Mockito.mock(GiftIdeaService.class);
-        mockKb = Mockito.mock(Keyboards.class);
+        mockRepo = mock(FormRepository.class);
+        mockIdeas = mock(GiftIdeaService.class);
+        mockKb = mock(Keyboards.class);
 
         logic = new BotLogic() {
             {
@@ -64,41 +64,81 @@ class BotLogicTest {
     // Команды
     // ========================
 
-    /** Проверяет, что команда «Помощь» выводит список доступных команд. */
+    /** Проверяет, что команда «Помощь» выводит точный текст помощи и вызывает mainReply(). */
     @Test
-    void shouldReturnHelpText() {
+    void shouldReturnExactHelpText() {
+        // Arrange
+        String expected = """
+                Команды:
+                Создать анкету — начать новый опрос
+                Мои анкеты — открыть список анкет
+                Помощь — показать это сообщение
+                """;
+
+        // Act
         Response r = logic.process(1L, "Помощь", null);
-        Assertions.assertTrue(r.getText().contains("Команды"));
+
+        // Assert
+        assertNotNull(r);
+        assertEquals(expected.strip(), r.getText().strip());
+        verify(mockKb).mainReply();
     }
 
     /** Проверяет реакцию на отсутствие анкет у пользователя. */
     @Test
     void shouldHandleEmptyFormsList() {
-        Mockito.when(mockRepo.listNames(1L)).thenReturn(List.of());
+        // Arrange
+        when(mockRepo.listNames(1L)).thenReturn(List.of());
+
+        // Act
         Response r = logic.process(1L, "Мои анкеты", null);
-        Assertions.assertTrue(r.getText().contains("У вас пока нет анкет"));
+
+        // Assert
+        assertNotNull(r);
+        assertEquals("У вас пока нет анкет. Создайте новую через Создать анкету.", r.getText());
+        verify(mockRepo).listNames(1L);
+        verify(mockKb).mainReply();
+        verify(mockKb, never()).formList(any());
     }
 
     /** Проверяет, что бот корректно показывает список анкет пользователя. */
     @Test
     void shouldShowFormList() {
-        Mockito.when(mockRepo.listNames(1L)).thenReturn(List.of("Мама", "Брат"));
+        // Arrange
+        when(mockRepo.listNames(1L)).thenReturn(List.of("Мама", "Брат"));
+
+        // Act
         Response r = logic.process(1L, "Мои анкеты", null);
-        Assertions.assertTrue(r.getText().contains("Выберите анкету"));
+
+        // Assert
+        assertNotNull(r);
+        assertEquals("Выберите анкету для работы:", r.getText());
+        verify(mockRepo).listNames(1L);
+        verify(mockKb).formList(List.of("Мама", "Брат"));
     }
 
     /** Проверяет начало создания новой анкеты через команду. */
     @Test
     void shouldStartFormCreation() {
+        // Act
         Response r = logic.process(1L, "Создать анкету", null);
-        Assertions.assertTrue(r.getText().contains("Введите имя"));
+
+        // Assert
+        assertNotNull(r);
+        assertEquals("Введите имя новой анкеты.", r.getText());
+        // mainReply используется как фон, но можно не проверять клавиатуру здесь
     }
 
     /** Проверяет реакцию на неизвестную команду. */
     @Test
     void shouldHandleUnknownCommand() {
+        // Act
         Response r = logic.process(1L, "Что-то странное", null);
-        Assertions.assertTrue(r.getText().contains("Не понимаю"));
+
+        // Assert
+        assertNotNull(r);
+        assertEquals("Не понимаю. Используйте /help.", r.getText());
+        verify(mockKb).mainReply();
     }
 
     // ========================
@@ -108,40 +148,112 @@ class BotLogicTest {
     /** Проверяет открытие анкеты при выборе её через inline-кнопку. */
     @Test
     void shouldHandleFormCallback() {
+        // Arrange
         UserForm f = new UserForm(1L, "Мама", "мама", "ДР", 40, "сад", 3000);
-        Mockito.when(mockRepo.get(1L, "Мама")).thenReturn(f);
+        when(mockRepo.get(1L, "Мама")).thenReturn(f);
+
+        String expectedText = """
+                Анкета: Мама
+                Повод: ДР
+                Возраст: 40
+                Интересы: сад
+                Бюджет: 3000 ₽
+                """.strip();
+
+        // Act
         Response r = logic.process(1L, null, "form:Мама");
-        Assertions.assertTrue(r.getText().contains("Анкета"));
+
+        // Assert
+        assertNotNull(r);
+        assertEquals(expectedText, r.getText().strip());
+        verify(mockRepo).get(1L, "Мама");
+        verify(mockKb).formActions("Мама");
+    }
+
+    /** Проверяет открытие несуществующей анкеты. */
+    @Test
+    void shouldReturnNotFoundWhenFormMissingOnCallback() {
+        // Arrange
+        when(mockRepo.get(1L, "Мама")).thenReturn(null);
+
+        // Act
+        Response r = logic.process(1L, null, "form:Мама");
+
+        // Assert
+        assertNotNull(r);
+        assertEquals("Анкета не найдена.", r.getText());
+        verify(mockRepo).get(1L, "Мама");
+        verify(mockKb, never()).formActions(anyString());
     }
 
     /** Проверяет, что бот предлагает меню редактирования анкеты. */
     @Test
     void shouldHandleEditCallback() {
+        // Act
         Response r = logic.process(1L, null, "edit:Мама");
-        Assertions.assertTrue(r.getText().contains("Что хотите изменить"));
+
+        // Assert
+        assertNotNull(r);
+        assertEquals("Что хотите изменить в анкете Мама?", r.getText());
+        verify(mockKb).editFieldMenu("Мама");
     }
 
     /** Проверяет запрос подтверждения удаления анкеты. */
     @Test
     void shouldHandleDeleteConfirmation() {
+        // Act
         Response r = logic.process(1L, null, "delete:Мама");
-        Assertions.assertTrue(r.getText().contains("Удалить анкету"));
+
+        // Assert
+        assertNotNull(r);
+        assertEquals("Удалить анкету Мама?", r.getText());
+        verify(mockKb).confirmDelete("Мама");
     }
 
     /** Проверяет удаление анкеты после подтверждения. */
     @Test
     void shouldHandleDeleteOk() {
+        // Act
         Response r = logic.process(1L, null, "deleteok:Мама");
-        Mockito.verify(mockRepo).delete(1L, "Мама");
-        Assertions.assertTrue(r.getText().contains("удалена"));
+
+        // Assert
+        assertNotNull(r);
+        assertEquals("Анкета Мама удалена.", r.getText());
+        verify(mockRepo).delete(1L, "Мама");
+        verify(mockKb).mainReply();
     }
 
-    /** Проверяет реакцию на callback, если у пользователя нет анкет. */
+    /** Проверяет реакцию на callback forms:list при отсутствии анкет. */
     @Test
-    void shouldHandleFormsListCallback() {
-        Mockito.when(mockRepo.listNames(1L)).thenReturn(List.of());
+    void shouldHandleFormsListCallbackWhenEmpty() {
+        // Arrange
+        when(mockRepo.listNames(1L)).thenReturn(List.of());
+
+        // Act
         Response r = logic.process(1L, null, "forms:list");
-        Assertions.assertTrue(r.getText().contains("пока нет анкет"));
+
+        // Assert
+        assertNotNull(r);
+        assertEquals("У вас пока нет анкет.", r.getText());
+        verify(mockRepo).listNames(1L);
+        verify(mockKb).mainReply();
+        verify(mockKb, never()).formList(any());
+    }
+
+    /** Проверяет callback forms:list, когда анкеты есть. */
+    @Test
+    void shouldHandleFormsListCallbackWithNames() {
+        // Arrange
+        when(mockRepo.listNames(1L)).thenReturn(List.of("Мама", "Папа"));
+
+        // Act
+        Response r = logic.process(1L, null, "forms:list");
+
+        // Assert
+        assertNotNull(r);
+        assertEquals("Выберите анкету:", r.getText());
+        verify(mockRepo).listNames(1L);
+        verify(mockKb).formList(List.of("Мама", "Папа"));
     }
 
     // ========================
@@ -151,23 +263,52 @@ class BotLogicTest {
     /** Проверяет успешную генерацию идеи подарка через AI-сервис. */
     @Test
     void shouldGenerateGiftIdea() throws Exception {
+        // Arrange
         UserForm f = new UserForm(1L, "Мама", "мама", "ДР", 40, "сад", 3000);
-        Mockito.when(mockRepo.get(1L, "Мама")).thenReturn(f);
-        Mockito.when(mockIdeas.fetchGiftIdeas(Mockito.anyString())).thenReturn("🎁 Подарок");
+        when(mockRepo.get(1L, "Мама")).thenReturn(f);
+        when(mockIdeas.fetchGiftIdeas(anyString())).thenReturn("🎁 Подарок маме");
 
+        // Act
         Response r = logic.process(1L, null, "idea:Мама");
-        Assertions.assertTrue(r.getText().contains("Идея подарка"));
+
+        // Assert
+        assertNotNull(r);
+        assertEquals("""
+                Идея подарка для Мама:
+                🎁 Подарок маме
+                """.strip(), r.getText().strip());
+
+        // промпт должен содержать данные анкеты
+        verify(mockIdeas).fetchGiftIdeas(
+                argThat(prompt ->
+                        prompt.contains("мама") &&
+                                prompt.contains("ДР") &&
+                                prompt.contains("40") &&
+                                prompt.contains("сад") &&
+                                prompt.contains("3000"))
+        );
+        verify(mockKb).backToForms();
     }
 
     /** Проверяет корректную обработку ошибки при генерации идеи подарка. */
     @Test
     void shouldHandleIdeaGenerationError() throws Exception {
+        // Arrange
         UserForm f = new UserForm(1L, "Мама", "мама", "ДР", 40, "сад", 3000);
-        Mockito.when(mockRepo.get(1L, "Мама")).thenReturn(f);
-        Mockito.when(mockIdeas.fetchGiftIdeas(Mockito.anyString())).thenThrow(new RuntimeException());
+        when(mockRepo.get(1L, "Мама")).thenReturn(f);
+        when(mockIdeas.fetchGiftIdeas(anyString())).thenThrow(new RuntimeException("API down"));
 
+        // Act
         Response r = logic.process(1L, null, "idea:Мама");
-        Assertions.assertTrue(r.getText().contains("Не удалось получить идею"));
+
+        // Assert
+        assertNotNull(r);
+        assertEquals("""
+                Идея подарка для Мама:
+                Не удалось получить идею. Попробуйте позже.
+                """.strip(), r.getText().strip());
+        verify(mockIdeas).fetchGiftIdeas(anyString());
+        verify(mockKb).backToForms();
     }
 
     // ========================
@@ -177,24 +318,39 @@ class BotLogicTest {
     /** Проверяет корректное прохождение всех шагов создания анкеты. */
     @Test
     void shouldWalkThroughFormCreationSteps() {
-        logic.process(1L, "Создать анкету", null);
-        logic.process(1L, "Мама", null);
+        // Старт
+        Response r1 = logic.process(1L, "Создать анкету", null);
+        assertEquals("Введите имя новой анкеты.", r1.getText());
 
-        Response r1 = logic.process(1L, "мама", null);
-        Assertions.assertTrue(r1.getText().contains("Повод"));
+        // Имя анкеты
+        Response r2 = logic.process(1L, "Мама", null);
+        assertEquals("Кому предназначен подарок?", r2.getText());
 
-        Response r2 = logic.process(1L, "ДР", null);
-        Assertions.assertTrue(r2.getText().contains("Возраст"));
+        // WHO
+        Response r3 = logic.process(1L, "мама", null);
+        assertEquals("Повод?", r3.getText());
 
-        Response r3 = logic.process(1L, "45", null);
-        Assertions.assertTrue(r3.getText().contains("Интересы"));
+        // REASON
+        Response r4 = logic.process(1L, "ДР", null);
+        assertEquals("Возраст?", r4.getText());
 
-        Response r4 = logic.process(1L, "сад", null);
-        Assertions.assertTrue(r4.getText().contains("Бюджет"));
+        // AGE
+        Response r5 = logic.process(1L, "45", null);
+        assertEquals("Интересы?", r5.getText());
 
-        Response r5 = logic.process(1L, "3000", null);
-        Assertions.assertTrue(r5.getText().contains("Анкета Мама сохранена"));
+        // HOBBIES
+        Response r6 = logic.process(1L, "сад", null);
+        assertEquals("Бюджет?", r6.getText());
+
+        // BUDGET + сохранение
+        Response r7 = logic.process(1L, "3000", null);
+        assertEquals("Анкета Мама сохранена!\nИспользуйте /forms для просмотра.", r7.getText());
+
+        // вот правильная проверка
+        verify(mockRepo).upsert(any(UserForm.class));
+        verify(mockKb, times(2)).mainReply(); // <— исправлено
     }
+
 
     /** Проверяет отклонение некорректного возраста во время опроса. */
     @Test
@@ -205,7 +361,9 @@ class BotLogicTest {
         logic.process(1L, "ДР", null);
 
         Response r = logic.process(1L, "abc", null);
-        Assertions.assertTrue(r.getText().contains("Введите число"));
+
+        assertEquals("Введите число для возраста.", r.getText());
+        verify(mockRepo, never()).upsert(any());
     }
 
     /** Проверяет отклонение некорректного бюджета во время опроса. */
@@ -219,7 +377,9 @@ class BotLogicTest {
         logic.process(1L, "сад", null);
 
         Response r = logic.process(1L, "abc", null);
-        Assertions.assertTrue(r.getText().contains("Введите число"));
+
+        assertEquals("Введите число для бюджета.", r.getText());
+        verify(mockRepo, never()).upsert(any());
     }
 
     // ========================
@@ -229,48 +389,71 @@ class BotLogicTest {
     /** Проверяет успешное изменение возраста анкеты и её сохранение. */
     @Test
     void shouldEditAgeFieldCorrectly() {
+        // Arrange
         UserForm f = new UserForm(1L, "Мама", "мама", "ДР", 40, "сад", 3000);
-        Mockito.when(mockRepo.get(1L, "Мама")).thenReturn(f);
+        when(mockRepo.get(1L, "Мама")).thenReturn(f);
 
+        // Act: выбор поля age и ввод нового значения
         logic.process(1L, null, "editfield:Мама:age");
         Response r = logic.process(1L, "45", null);
 
-        Assertions.assertTrue(r.getText().contains("Обновлено"));
-        Mockito.verify(mockRepo).upsert(Mockito.any(UserForm.class));
+        // Assert
+        assertNotNull(r);
+        assertTrue(r.getText().startsWith("Обновлено!"));
+        assertTrue(r.getText().contains("Возраст: 45"));
+        verify(mockRepo).get(1L, "Мама");
+        verify(mockRepo).upsert(any(UserForm.class));
+        verify(mockKb).formActions("Мама");
     }
 
     /** Проверяет отклонение некорректного возраста при редактировании анкеты. */
     @Test
     void shouldRejectInvalidAgeDuringEdit() {
+        // Arrange
         UserForm f = new UserForm(1L, "Мама", "мама", "ДР", 40, "сад", 3000);
-        Mockito.when(mockRepo.get(1L, "Мама")).thenReturn(f);
+        when(mockRepo.get(1L, "Мама")).thenReturn(f);
 
+        // Act
         logic.process(1L, null, "editfield:Мама:age");
         Response r = logic.process(1L, "abc", null);
 
-        Assertions.assertTrue(r.getText().contains("Возраст должен быть числом"));
+        // Assert
+        assertEquals("Возраст должен быть числом.", r.getText());
+        verify(mockRepo).get(1L, "Мама");
+        verify(mockRepo, never()).upsert(any());
     }
 
     /** Проверяет отклонение некорректного бюджета при редактировании анкеты. */
     @Test
     void shouldRejectInvalidBudgetDuringEdit() {
+        // Arrange
         UserForm f = new UserForm(1L, "Мама", "мама", "ДР", 40, "сад", 3000);
-        Mockito.when(mockRepo.get(1L, "Мама")).thenReturn(f);
+        when(mockRepo.get(1L, "Мама")).thenReturn(f);
 
+        // Act
         logic.process(1L, null, "editfield:Мама:budget");
         Response r = logic.process(1L, "abc", null);
 
-        Assertions.assertTrue(r.getText().contains("Бюджет должен быть числом"));
+        // Assert
+        assertEquals("Бюджет должен быть числом.", r.getText());
+        verify(mockRepo).get(1L, "Мама");
+        verify(mockRepo, never()).upsert(any());
     }
 
     /** Проверяет реакцию на попытку редактировать несуществующую анкету. */
     @Test
     void shouldHandleMissingFormDuringEdit() {
-        Mockito.when(mockRepo.get(1L, "Мама")).thenReturn(null);
+        // Arrange
+        when(mockRepo.get(1L, "Мама")).thenReturn(null);
 
+        // Act
         logic.process(1L, null, "editfield:Мама:age");
         Response r = logic.process(1L, "45", null);
 
-        Assertions.assertTrue(r.getText().contains("Анкета не найдена"));
+        // Assert
+        assertEquals("Анкета не найдена.", r.getText());
+        verify(mockRepo).get(1L, "Мама");
+        verify(mockRepo, never()).upsert(any());
+        verify(mockKb).mainReply();
     }
 }
