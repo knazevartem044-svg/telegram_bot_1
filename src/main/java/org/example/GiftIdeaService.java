@@ -59,15 +59,17 @@ public class GiftIdeaService implements GiftIdeaGenerator {
      * Загружает API-ключ из .env файла и проверяет его наличие.
      */
     public GiftIdeaService() {
-        Dotenv dotenv = Dotenv.configure().load();
+        Dotenv dotenv = Dotenv.configure()
+                .ignoreIfMissing()
+                .load();
+
         this.apiKey = dotenv.get("OPENROUTER_API_KEY");
 
         if (apiKey == null || apiKey.isBlank()) {
-            log.error("Не найден ключ API OpenRouter. Убедитесь, что он указан в файле .env");
-        } else {
-            log.info("GiftIdeaService инициализирован. API-ключ успешно загружен.");
+            log.warn("OPENROUTER_API_KEY не найден. Работа сервиса будет невозможна без ключа.");
         }
     }
+
 
     /**
      * Отправляет запрос к OpenRouter и возвращает сгенерированные идеи подарков.
