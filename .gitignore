@@ -4,7 +4,7 @@ target/
 !**/src/test/**/target/
 .kotlin
 .env
-.db
+*.db
 ### IntelliJ IDEA ###
 .idea
 *.iws
