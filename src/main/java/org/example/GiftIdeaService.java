@@ -69,7 +69,10 @@ public class GiftIdeaService implements GiftIdeaGenerator {
             log.warn("OPENROUTER_API_KEY не найден. Работа сервиса будет невозможна без ключа.");
         }
     }
-
+    /** Возвращает URL API, используемый сервисом. */
+    protected String apiUrl() {
+        return API_URL;
+    }
 
     /**
      * Отправляет запрос к OpenRouter и возвращает сгенерированные идеи подарков.
@@ -95,7 +98,7 @@ public class GiftIdeaService implements GiftIdeaGenerator {
         );
 
         Request request = new Request.Builder()
-                .url(API_URL)
+                .url(apiUrl())
                 .header(HEADER_AUTH, "Bearer " + apiKey)
                 .header(HEADER_CONTENT_TYPE, CONTENT_TYPE_VALUE)
                 .header(HEADER_REFERER, REFERER_VALUE)

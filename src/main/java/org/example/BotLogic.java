@@ -12,27 +12,33 @@ import java.util.Map;
  * Работает с анкетами, базой данных и нейросетью для подбора подарков.
  */
 public class BotLogic {
+    /** Хранилище анкет пользователей. */
+    private final FormRepository forms;
 
-    /** Хранилище анкет пользователей */
-    private final FormRepository forms = new FormRepository();
+    /** Сервис генерации идей подарков. */
+    private final GiftIdeaService ideaService;
 
-    /** Сервис генерации идей подарков */
-    private final GiftIdeaService ideaService = new GiftIdeaService();
+    /** Генератор клавиатур Telegram. */
+    private final Keyboards keyboards;
 
-    /** Класс для создания всех клавиатур */
-    private final Keyboards keyboards = new Keyboards();
-
-    /** Имя анкеты, которая создаётся */
+    /** Имя новой анкеты, которую вводит пользователь. */
     private final Map<Long, String> pendingFormName = new HashMap<>();
 
-    /** Сессии пользователей, участвующих в опросе */
+    /** Активные сессии пользователей для пошагового опроса. */
     private final Map<Long, Session> sessions = new HashMap<>();
 
-    /** Анкета, которую сейчас редактирует пользователь */
+    /** Название анкеты, которую пользователь редактирует. */
     private final Map<Long, String> editTarget = new HashMap<>();
 
-    /** Поле анкеты, которое редактируется */
+    /** Поле анкеты, которое редактируется пользователем. */
     private final Map<Long, String> editField = new HashMap<>();
+
+    /** Создаёт объект логики бота с внешними зависимостями. */
+    public BotLogic(FormRepository forms, GiftIdeaService ideas, Keyboards keyboards) {
+        this.forms = forms;
+        this.ideaService = ideas;
+        this.keyboards = keyboards;
+    }
 
     /**
      * Получает обновления от Telegram и вызывает нужный метод.

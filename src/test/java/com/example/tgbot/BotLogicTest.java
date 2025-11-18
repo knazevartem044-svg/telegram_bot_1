@@ -39,26 +39,9 @@ class BotLogicTest {
         mockIdeas = mock(GiftIdeaService.class);
         mockKb = mock(Keyboards.class);
 
-        logic = new BotLogic() {
-            {
-                try {
-                    var fForms = BotLogic.class.getDeclaredField("forms");
-                    fForms.setAccessible(true);
-                    fForms.set(this, mockRepo);
-
-                    var fIdeas = BotLogic.class.getDeclaredField("ideaService");
-                    fIdeas.setAccessible(true);
-                    fIdeas.set(this, mockIdeas);
-
-                    var fKb = BotLogic.class.getDeclaredField("keyboards");
-                    fKb.setAccessible(true);
-                    fKb.set(this, mockKb);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        };
+        logic = new BotLogic(mockRepo, mockIdeas, mockKb);
     }
+
 
     // ========================
     // Команды
