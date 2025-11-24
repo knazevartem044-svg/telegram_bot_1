@@ -33,7 +33,7 @@ public class TgBot {
      */
     public void start() {
         bot.setUpdatesListener(this::onUpdates, Throwable::printStackTrace);
-        System.out.println("🤖 Bot started...");
+        System.out.println("Bot started...");
     }
 
     /**

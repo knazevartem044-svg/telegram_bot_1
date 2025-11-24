@@ -12,7 +12,7 @@ import java.sql.Statement;
 class Database {
     /**
      Адрес подключения к базе данных SQLite.
-     Например: "jdbc:sqlite:forms.db" или "jdbc:sqlite:test.db".
+     "jdbc:sqlite:forms.db".
      */
     String url;
 
