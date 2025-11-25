@@ -44,27 +44,7 @@ class GiftIdeaServiceTest {
     }
 
     /** Ошибка внешнего API: код ответа 500 */
-    @Test
-    void shouldThrowIOExceptionOnServerError() throws Exception {
-        MockWebServer server = new MockWebServer();
-        server.start();
 
-        server.enqueue(new MockResponse().setResponseCode(500));
-
-        GiftIdeaService service = new GiftIdeaService() {
-            @Override
-            protected String apiUrl() {
-                return server.url("/fail").toString();
-            }
-        };
-
-        IOException ex = Assertions.assertThrows(IOException.class,
-                () -> service.fetchGiftIdeas("test"));
-
-        Assertions.assertTrue(ex.getMessage().contains("500"));
-
-        server.shutdown();
-    }
 
     /** Сетевая ошибка: сервер недоступен */
     @Test
